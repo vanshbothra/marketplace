@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,7 @@ import Link from "next/link";
 import { Store, CheckCircle, XCircle } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 
-async function approveBusiness(formData: FormData) {
+async function approveVendor(formData: FormData) {
     "use server";
 
     const session = await auth();
@@ -16,15 +15,13 @@ async function approveBusiness(formData: FormData) {
         throw new Error("Unauthorized");
     }
 
-    const businessId = formData.get("businessId") as string;
+    const vendorId = formData.get("vendorId") as string;
 
-    await prisma.business.update({
-        where: { id: businessId },
-        data: { status: "APPROVED" },
-    });
+    // TODO: Call backend API to approve vendor
+    console.log("Approving vendor:", vendorId);
 }
 
-async function rejectBusiness(formData: FormData) {
+async function rejectVendor(formData: FormData) {
     "use server";
 
     const session = await auth();
@@ -32,61 +29,41 @@ async function rejectBusiness(formData: FormData) {
         throw new Error("Unauthorized");
     }
 
-    const businessId = formData.get("businessId") as string;
+    const vendorId = formData.get("vendorId") as string;
 
-    await prisma.business.update({
-        where: { id: businessId },
-        data: { status: "REJECTED" },
-    });
+    // TODO: Call backend API to reject vendor
+    console.log("Rejecting vendor:", vendorId);
 }
 
 export default async function AdminPage() {
     const session = await auth();
 
-    if (!session?.user) {
-        redirect("/auth/signin");
-    }
-
-    if (session.user.role !== "ADMIN") {
+    if (session!.user.role !== "ADMIN") {
         redirect("/");
     }
 
-    // Fetch pending businesses
-    const pendingBusinesses = await prisma.business.findMany({
-        where: { status: "PENDING" },
-        include: {
-            members: {
-                include: {
-                    user: true,
-                },
-            },
-            _count: {
-                select: { listings: true },
-            },
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    });
+    // TODO: Fetch pending vendors from backend API
+    // Dummy data for now
+    const pendingVendors: any[] = [];
 
-    // Fetch all businesses for overview
-    const allBusinesses = await prisma.business.findMany({
-        include: {
-            _count: {
-                select: { listings: true, members: true },
-            },
+    // TODO: Fetch all vendors from backend API
+    // Dummy data for now
+    const allVendors = [
+        {
+            id: "1",
+            name: "Sample Vendor",
+            isVerified: true,
+            isActive: true,
+            createdAt: new Date(),
+            _count: { listings: 0 },
         },
-        orderBy: {
-            createdAt: "desc",
-        },
-        take: 50,
-    });
+    ];
 
     const stats = {
-        total: allBusinesses.length,
-        approved: allBusinesses.filter((b: typeof allBusinesses[0]) => b.status === "APPROVED").length,
-        pending: allBusinesses.filter((b: typeof allBusinesses[0]) => b.status === "PENDING").length,
-        rejected: allBusinesses.filter((b: typeof allBusinesses[0]) => b.status === "REJECTED").length,
+        total: allVendors.length,
+        verified: allVendors.filter((v) => v.isVerified).length,
+        pending: allVendors.filter((v) => !v.isVerified && v.isActive).length,
+        inactive: allVendors.filter((v) => !v.isActive).length,
     };
 
     return (
@@ -102,7 +79,7 @@ export default async function AdminPage() {
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session.user} />
+                    <UserNav user={session!.user} />
                 </div>
             </header>
 
@@ -115,13 +92,13 @@ export default async function AdminPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-2xl">{stats.total}</CardTitle>
-                            <CardDescription>Total Businesses</CardDescription>
+                            <CardDescription>Total Vendors</CardDescription>
                         </CardHeader>
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-2xl text-green-600">{stats.approved}</CardTitle>
-                            <CardDescription>Approved</CardDescription>
+                            <CardTitle className="text-2xl text-green-600">{stats.verified}</CardTitle>
+                            <CardDescription>Verified</CardDescription>
                         </CardHeader>
                     </Card>
                     <Card>
@@ -132,8 +109,8 @@ export default async function AdminPage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-2xl text-red-600">{stats.rejected}</CardTitle>
-                            <CardDescription>Rejected</CardDescription>
+                            <CardTitle className="text-2xl text-red-600">{stats.inactive}</CardTitle>
+                            <CardDescription>Inactive</CardDescription>
                         </CardHeader>
                     </Card>
                 </div>
@@ -141,34 +118,34 @@ export default async function AdminPage() {
                 {/* Pending Approvals */}
                 <div className="mb-8">
                     <h3 className="text-2xl font-bold mb-4">Pending Approvals</h3>
-                    {pendingBusinesses.length === 0 ? (
+                    {pendingVendors.length === 0 ? (
                         <Card>
                             <CardContent className="flex flex-col items-center justify-center py-12">
                                 <CheckCircle className="h-12 w-12 text-green-600 mb-4" />
                                 <h3 className="text-xl font-semibold mb-2">All caught up!</h3>
-                                <p className="text-muted-foreground">No pending business approvals</p>
+                                <p className="text-muted-foreground">No pending vendor approvals</p>
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="space-y-4">
-                            {pendingBusinesses.map((business: typeof pendingBusinesses[0]) => (
-                                <Card key={business.id}>
+                            {pendingVendors.map((vendor: any) => (
+                                <Card key={vendor.id}>
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                                <CardTitle>{business.name}</CardTitle>
+                                                <CardTitle>{vendor.name}</CardTitle>
                                                 <CardDescription className="mt-2">
-                                                    {business.description || "No description provided"}
+                                                    {vendor.description || "No description provided"}
                                                 </CardDescription>
                                                 <div className="mt-4 space-y-1">
                                                     <p className="text-sm text-muted-foreground">
-                                                        <strong>Owner:</strong> {business.members.find((m: typeof business.members[0]) => m.role === "OWNER")?.user.name}
+                                                        <strong>Contact:</strong> {vendor.contactEmail}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        <strong>Email:</strong> {business.members.find((m: typeof business.members[0]) => m.role === "OWNER")?.user.email}
+                                                        <strong>Categories:</strong> {vendor.categories.join(", ")}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        <strong>Created:</strong> {new Date(business.createdAt).toLocaleDateString()}
+                                                        <strong>Created:</strong> {new Date(vendor.createdAt).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </div>
@@ -177,15 +154,15 @@ export default async function AdminPage() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex gap-2">
-                                            <form action={approveBusiness} className="flex-1">
-                                                <input type="hidden" name="businessId" value={business.id} />
+                                            <form action={approveVendor} className="flex-1">
+                                                <input type="hidden" name="vendorId" value={vendor.id} />
                                                 <Button type="submit" className="w-full" variant="default">
                                                     <CheckCircle className="mr-2 h-4 w-4" />
                                                     Approve
                                                 </Button>
                                             </form>
-                                            <form action={rejectBusiness} className="flex-1">
-                                                <input type="hidden" name="businessId" value={business.id} />
+                                            <form action={rejectVendor} className="flex-1">
+                                                <input type="hidden" name="vendorId" value={vendor.id} />
                                                 <Button type="submit" className="w-full" variant="destructive">
                                                     <XCircle className="mr-2 h-4 w-4" />
                                                     Reject
@@ -199,29 +176,23 @@ export default async function AdminPage() {
                     )}
                 </div>
 
-                {/* All Businesses */}
+                {/* All Vendors */}
                 <div>
-                    <h3 className="text-2xl font-bold mb-4">All Businesses</h3>
+                    <h3 className="text-2xl font-bold mb-4">All Vendors</h3>
                     <div className="space-y-2">
-                        {allBusinesses.map((business: typeof allBusinesses[0]) => (
-                            <Card key={business.id}>
+                        {allVendors.map((vendor: any) => (
+                            <Card key={vendor.id}>
                                 <CardContent className="flex items-center justify-between py-4">
                                     <div className="flex-1">
-                                        <p className="font-semibold">{business.name}</p>
+                                        <p className="font-semibold">{vendor.name}</p>
                                         <p className="text-sm text-muted-foreground">
-                                            {business._count.listings} listings • {business._count.members} members
+                                            {vendor._count.listings} listings
                                         </p>
                                     </div>
                                     <Badge
-                                        variant={
-                                            business.status === "APPROVED"
-                                                ? "default"
-                                                : business.status === "PENDING"
-                                                    ? "secondary"
-                                                    : "destructive"
-                                        }
+                                        variant={vendor.isVerified ? "default" : "secondary"}
                                     >
-                                        {business.status}
+                                        {vendor.isVerified ? "VERIFIED" : "PENDING"}
                                     </Badge>
                                 </CardContent>
                             </Card>

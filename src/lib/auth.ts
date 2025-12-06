@@ -1,10 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "./prisma";
+
+// TODO: Integrate with backend API for authentication
+// The backend will handle user validation, role management, and email allowlisting
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    adapter: PrismaAdapter(prisma),
     providers: [
         Google({
             clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -15,25 +15,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         async signIn({ user, account, profile }) {
             if (!user.email) return false;
 
-            // Check if email ends with ashoka.edu.in
-            const isAshokaEmail = user.email.endsWith("@ashoka.edu.in");
-
-            // Check if email is in allowed list
-            const allowedEmail = await prisma.allowedEmail.findUnique({
-                where: { email: user.email },
-            });
-
-            if (!isAshokaEmail && !allowedEmail) {
-                return false;
-            }
-
+            // TODO: Call backend API to validate user email
+            // For now, allowing all sign-ins (replace with backend validation)
             return true;
         },
-        async session({ session, user }) {
+        async jwt({ token, user, account }) {
+            // Add user info to token on initial sign in
+            if (user) {
+                token.id = user.id;
+                // TODO: Fetch user role from backend API
+                token.role = "USER"; // Default role
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            // Add token data to session
             if (session.user) {
-                session.user.id = user.id;
+                session.user.id = token.id as string;
                 // @ts-ignore
-                session.user.role = user.role;
+                session.user.role = token.role;
             }
             return session;
         },
@@ -43,6 +43,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         error: "/auth/error",
     },
     session: {
-        strategy: "database",
+        strategy: "jwt",
     },
 });

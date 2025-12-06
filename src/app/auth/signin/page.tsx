@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SignInPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 via-blue-50 to-pink-50">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-3xl font-bold">Ashoka Marketplace</CardTitle>
@@ -15,8 +15,11 @@ export default function SignInPage() {
                 <CardContent>
                     <form
                         action={async () => {
-                            "use server";
-                            await signIn("google", { redirectTo: "/" });
+                            // Redirect to localhost:4000/auth/google via server
+                            "use server"
+
+                            // "use server";
+                            // await signIn("google", { redirectTo: "/" });
                         }}
                     >
                         <Button type="submit" className="w-full" size="lg">

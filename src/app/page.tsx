@@ -1,115 +1,110 @@
 import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Store, ShoppingBag, Utensils, GraduationCap } from "lucide-react";
+import { Store, ShoppingBag, GraduationCap } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 
 export default async function Home() {
   const session = await auth();
-
-  if (!session) {
-    redirect("/auth/signin");
-  }
+  // Proxy middleware guarantees authentication, so session is never null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-soft">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 text-purple-600" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+      <header className="glass border-b border-white/20 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-2xl bg-black">
+              <Store className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-light tracking-wide text-foreground dark:text-foreground">
               Ashoka Marketplace
             </h1>
           </div>
-          <UserNav user={session.user} />
+          <UserNav user={session!.user} />
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-6 py-16">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">Welcome to the Ashoka Marketplace</h2>
-          <p className="text-lg text-muted-foreground mb-6">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl font-light mb-6 text-foreground dark:text-foreground">Welcome to Ashoka Marketplace</h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Buy, sell, and trade with fellow Ashokans
           </p>
           <div className="flex gap-4 justify-center">
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="rounded-2xl bg-black hover:bg-gray-800 text-white px-8">
               <Link href="/marketplace">Browse Listings</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="ghost" size="lg" className="rounded-2xl glass-light px-8">
               <Link href="/dashboard">My Dashboard</Link>
             </Button>
           </div>
         </div>
 
         {/* Categories */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <ShoppingBag className="h-8 w-8 text-blue-600 mb-2" />
-              <CardTitle>Products</CardTitle>
-              <CardDescription>Second-hand goods, textbooks, and more</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <Store className="h-8 w-8 text-purple-600 mb-2" />
-              <CardTitle>Merchandise</CardTitle>
-              <CardDescription>T-shirts, hoodies, and custom items</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <GraduationCap className="h-8 w-8 text-green-600 mb-2" />
-              <CardTitle>Services</CardTitle>
-              <CardDescription>Tutoring, design, and other services</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <Utensils className="h-8 w-8 text-orange-600 mb-2" />
-              <CardTitle>Food</CardTitle>
-              <CardDescription>Homemade meals and snacks</CardDescription>
-            </CardHeader>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <Link href="/marketplace?type=PRODUCT" className="group">
+            <div className="glass-card rounded-3xl p-8 hover:shadow-soft-lg transition-all duration-300 border-0">
+              <div className="p-4 rounded-2xl bg-blue-50 w-fit mb-4">
+                <ShoppingBag className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-light mb-2 text-foreground dark:text-foreground">Products</h3>
+              <p className="text-muted-foreground">Second-hand goods, textbooks, and more</p>
+            </div>
+          </Link>
+          <Link href="/marketplace?type=PRODUCT" className="group">
+            <div className="glass-card rounded-3xl p-8 hover:shadow-soft-lg transition-all duration-300 border-0">
+              <div className="p-4 rounded-2xl bg-purple-50 w-fit mb-4">
+                <Store className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-2xl font-light mb-2 text-foreground dark:text-foreground">Merchandise</h3>
+              <p className="text-muted-foreground">T-shirts, hoodies, and custom items</p>
+            </div>
+          </Link>
+          <Link href="/marketplace?type=SERVICE" className="group">
+            <div className="glass-card rounded-3xl p-8 hover:shadow-soft-lg transition-all duration-300 border-0">
+              <div className="p-4 rounded-2xl bg-green-50 w-fit mb-4">
+                <GraduationCap className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-light mb-2 text-foreground dark:text-foreground">Services</h3>
+              <p className="text-muted-foreground">Tutoring, design, and other services</p>
+            </div>
+          </Link>
         </div>
 
-        {/* Quick Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
-            <CardDescription>Here's how to make the most of the marketplace</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Getting Started */}
+        <div className="glass-card rounded-3xl p-10 shadow-soft border-0">
+          <h3 className="text-3xl font-light mb-2 text-foreground dark:text-foreground">Getting Started</h3>
+          <p className="text-muted-foreground mb-8">Here's how to make the most of the marketplace</p>
+          <div className="space-y-6">
             <div className="flex items-start gap-4">
-              <Badge variant="outline" className="text-lg px-3 py-1">1</Badge>
+              <Badge variant="outline" className="text-lg px-3 py-1 glass">1</Badge>
               <div>
-                <h3 className="font-semibold mb-1">Create a Business Account</h3>
+                <h3 className="font-semibold mb-1">Create a Vendor Account</h3>
                 <p className="text-sm text-muted-foreground">
-                  Set up your business profile to start selling. You can create up to 5 businesses.
+                  Set up your vendor profile to start selling. You can create up to 5 vendors.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <Badge variant="outline" className="text-lg px-3 py-1">2</Badge>
+              <Badge variant="outline" className="text-lg px-3 py-1 glass">2</Badge>
               <div>
                 <h3 className="font-semibold mb-1">Wait for Approval</h3>
                 <p className="text-sm text-muted-foreground">
-                  Admin will review your business account. This usually takes 1-2 days.
+                  Admin will review your vendor account. This usually takes 1-2 days.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <Badge variant="outline" className="text-lg px-3 py-1">3</Badge>
+              <Badge variant="outline" className="text-lg px-3 py-1 glass">3</Badge>
               <div>
                 <h3 className="font-semibold mb-1">Add Your Listings</h3>
                 <p className="text-sm text-muted-foreground">
-                  Once approved, create listings for products, services, or food items.
+                  Once approved, create listings for products or services.
                 </p>
               </div>
             </div>
@@ -122,8 +117,8 @@ export default async function Home() {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     </div>
   );
