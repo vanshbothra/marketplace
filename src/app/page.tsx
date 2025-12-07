@@ -23,7 +23,7 @@ export default async function Home() {
               Ashoka Marketplace
             </h1>
           </div>
-          <UserNav user={session!.user} />
+          <UserNav />
         </div>
       </header>
 

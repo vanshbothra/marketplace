@@ -133,7 +133,7 @@ export default async function ListingOrdersPage({
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 

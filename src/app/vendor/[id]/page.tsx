@@ -1,63 +1,75 @@
-import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Store, ArrowLeft, Plus, Star } from "lucide-react";
+import { Store, ArrowLeft, Plus } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import { cookies } from "next/headers";
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
 
 export default async function VendorPage({
     params,
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const session = await auth();
     const { id } = await params;
 
-    // TODO: Fetch vendor details from backend API
-    // Dummy data for now
-    const vendor = {
-        id: id,
-        name: "Sample Vendor",
-        logo: "/3.png",
-        description: "This is a sample vendor. Replace with backend API call.",
-        categories: ["PRODUCT", "SERVICE"],
-        isVerified: true,
-        isActive: true,
-        contactEmail: "vendor@ashoka.edu.in",
-        contactPhone: "+1234567890",
-        listings: [
-            {
-                id: "1",
-                name: "Sample Listing",
-                tags: [
-                    { id: "1", name: "electronics" },
-                ],
-                description: "Sample listing description",
-                type: "PRODUCT" as const,
-                inventoryType: "STOCK" as const,
-                availableQty: 10,
-                price: 100,
-                variants: ["S", "M", "L"],
-                isAvailable: true,
-                reviews: [{ rating: 5 }, { rating: 4 }],
-            },
-        ],
-        owners: [
-            { id: "1", name: "Sample Owner", email: "owner@ashoka.edu.in" },
-        ],
-        members: [
-            { id: "2", name: "Sample Member", email: "member@ashoka.edu.in" },
-        ],
-    };
+    // Get cookies to pass to backend
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
 
-    if (!vendor) {
+    // Fetch vendor from backend API (public endpoint)
+    let vendor;
+    try {
+        const response = await fetch(`${BACKEND_URL}/vendors/${id}`, {
+            cache: 'no-store',
+            headers: {
+                'Cookie': cookieHeader,
+            },
+        });
+
+        if (!response.ok) {
+            console.error(`Failed to fetch vendor: ${response.status} ${response.statusText}`);
+            notFound();
+        }
+
+        const data = await response.json();
+        if (!data.success || !data.data) {
+            console.error('Invalid response from backend:', data);
+            notFound();
+        }
+
+        vendor = data.data;
+    } catch (error) {
+        console.error('Error fetching vendor:', error);
+        // If backend is not reachable, show a more helpful error
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            console.error('Backend server may not be running at:', BACKEND_URL);
+        }
         notFound();
     }
 
-    // TODO: Replace hardcoded check with actual JWT user check
-    const isOwner = vendor.owners.some(o => o.id === "1");
+    // Check if current user is an owner by calling the /me endpoint
+    // If the backend returns success, user is an owner
+    let isOwner = false;
+    try {
+        const meResponse = await fetch(`${BACKEND_URL}/vendors/me/${id}`, {
+            cache: 'no-store',
+            headers: {
+                'Cookie': cookieHeader,
+            },
+        });
+
+        if (meResponse.ok) {
+            const meData = await meResponse.json();
+            isOwner = meData.success && meData.data;
+        }
+    } catch (error) {
+        // User is not an owner, that's fine
+        isOwner = false;
+    }
 
     return (
         <div className="min-h-screen bg-gradient-soft">
@@ -74,7 +86,7 @@ export default async function VendorPage({
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 
@@ -108,7 +120,7 @@ export default async function VendorPage({
                                         </Badge>
                                     )}
                                     <span className="text-sm text-muted-foreground">
-                                        {vendor.owners.length + vendor.members.length} members
+                                        {(vendor.owners?.length || 0) + (vendor.members?.length || 0)} members
                                     </span>
                                 </div>
                             </div>
@@ -131,7 +143,7 @@ export default async function VendorPage({
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-2xl font-semibold text-foreground">Listings</h3>
-                            <p className="text-muted-foreground">{vendor.listings.length} {vendor.listings.length === 1 ? "listing" : "listings"}</p>
+                            <p className="text-muted-foreground">{vendor.listings?.length || 0} {vendor.listings?.length === 1 ? "listing" : "listings"}</p>
                         </div>
                         {isOwner && (
                             <Button asChild className="rounded-2xl bg-black hover:bg-gray-800 text-white">
@@ -143,7 +155,7 @@ export default async function VendorPage({
                         )}
                     </div>
 
-                    {vendor.listings.length === 0 ? (
+                    {!vendor.listings || vendor.listings.length === 0 ? (
                         <div className="glass-card rounded-3xl p-12 text-center shadow-soft border-0">
                             <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                             <h3 className="text-2xl font-light mb-2 text-foreground">No listings yet</h3>
@@ -153,44 +165,35 @@ export default async function VendorPage({
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {vendor.listings.map((listing) => {
-                                const avgRating =
-                                    listing.reviews.length > 0
-                                        ? listing.reviews.reduce((sum, r) => sum + r.rating, 0) / listing.reviews.length
-                                        : 0;
-
-                                return (
-                                    <Link
-                                        key={listing.id}
-                                        href={`/marketplace/${listing.id}`}
-                                        className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 border-0 group"
-                                    >
-                                        <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative flex items-center justify-center">
+                            {vendor.listings.map((listing: any) => (
+                                <Link
+                                    key={listing.id}
+                                    href={`/marketplace/${listing.id}`}
+                                    className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 border-0 group"
+                                >
+                                    <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative flex items-center justify-center">
+                                        {listing.images && listing.images[0] ? (
+                                            <Image src={listing.images[0]} alt={listing.name} fill className="object-cover" />
+                                        ) : (
                                             <Store className="h-16 w-16 text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    <div className="p-6">
+                                        <h4 className="text-xl font-light text-foreground line-clamp-1 mb-2">{listing.name}</h4>
+                                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{listing.description}</p>
+                                        <div className="flex items-center justify-between">
+                                            {listing.price !== null && listing.price !== undefined ? (
+                                                <p className="text-2xl font-light text-foreground">₹{listing.price}</p>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">Contact for price</p>
+                                            )}
+                                            {!listing.isAvailable && (
+                                                <Badge variant="secondary" className="rounded-full">Unavailable</Badge>
+                                            )}
                                         </div>
-                                        <div className="p-6">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <h4 className="text-xl font-light text-foreground line-clamp-1 flex-1">{listing.name}</h4>
-                                                <Badge variant="secondary" className="rounded-full ml-2">{listing.type}</Badge>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{listing.description}</p>
-                                            <div className="flex items-center justify-between">
-                                                {listing.price !== null ? (
-                                                    <p className="text-2xl font-light text-foreground">₹{listing.price}</p>
-                                                ) : (
-                                                    <p className="text-sm text-muted-foreground">Contact for price</p>
-                                                )}
-                                                {avgRating > 0 && (
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                        <span className="text-sm font-medium text-foreground">{avgRating.toFixed(1)}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Link>
-                                );
-                            })}
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     )}
                 </div>

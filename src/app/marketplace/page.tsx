@@ -164,7 +164,7 @@ export default async function MarketplacePage({
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 

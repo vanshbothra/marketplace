@@ -92,7 +92,7 @@ export default async function OrdersPage() {
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 

@@ -21,10 +21,10 @@ export default async function DashboardPage() {
             categories: ["PRODUCT", "SERVICE"],
             isVerified: true,
             isActive: true,
-            contactEmail: session!.user.email!,
+            contactEmail: "a@b.com",
             contactPhone: "+1234567890",
             listings: [],
-            owners: [{ id: session!.user.id, name: session!.user.name!, email: session!.user.email! }],
+            owners: [{ id: "1", name: "Vansh Bothra", email: "a@b.com" }],
             members: [],
             _count: {
                 listings: 0,
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
                     </div>
                     {canCreateVendor && (
                         <Button asChild className="rounded-2xl glass-light text-black dark:text-white hover:text-white">
-                            <Link href="/dashboard/vendors/new">
+                            <Link href="/vendor/new">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create Vendor
                             </Link>
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                         <h3 className="text-2xl font-light mb-2 text-foreground dark:text-foreground">No vendors yet</h3>
                         <p className="text-muted-foreground mb-6">Create your first vendor to start selling</p>
                         <Button asChild className="rounded-2xl bg-black hover:bg-gray-800 text-white">
-                            <Link href="/dashboard/vendors/new">
+                            <Link href="/vendor/new">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create Vendor
                             </Link>
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {vendors.map((vendor) => (
-                            <Link key={vendor.id} href={`/dashboard/vendors/${vendor.id}`} className="group">
+                            <Link key={vendor.id} href={`/vendor/${vendor.id}`} className="group">
                                 <div className="glass-card rounded-3xl p-6 hover:shadow-soft-lg transition-all duration-300 border-0">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">

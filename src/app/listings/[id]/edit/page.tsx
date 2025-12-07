@@ -70,7 +70,7 @@ export default async function EditListingPage({
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 

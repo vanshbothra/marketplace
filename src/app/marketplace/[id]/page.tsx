@@ -89,7 +89,7 @@ export default async function ListingDetailPage({
                             </h1>
                         </Link>
                     </div>
-                    <UserNav user={session!.user} />
+                    <UserNav />
                 </div>
             </header>
 
