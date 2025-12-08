@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Store, Plus, Package, Clock } from "lucide-react";
-import { UserNav } from "@/components/user-nav";
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -37,22 +36,6 @@ export default async function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-gradient-soft">
-            {/* Header */}
-            <header className="glass border-b border-white/20 sticky top-0 z-50">
-                <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-3">
-                            <div className="p-2 rounded-2xl bg-black">
-                                <Store className="h-5 w-5 text-white" />
-                            </div>
-                            <h1 className="text-xl font-light tracking-wide text-foreground dark:text-foreground">
-                                Ashoka Marketplace
-                            </h1>
-                        </Link>
-                    </div>
-                    <UserNav />
-                </div>
-            </header>
 
             {/* Main Content */}
             <main className="container mx-auto px-6 py-12">

@@ -20,44 +20,84 @@ import { useState, useEffect } from "react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
-export default function EditListingPage() {
+export default function NewListingPage() {
     const params = useParams();
     const router = useRouter();
-    const listingId = params.id as string;
+    const vendorId = params.id as string;
 
-    const [listing, setListing] = useState<any>(null);
+    const [vendor, setVendor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [variantInput, setVariantInput] = useState("");
+    const [variants, setVariants] = useState<string[]>([]);
+    const [imageInput, setImageInput] = useState("");
+    const [images, setImages] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState("");
+    const [tags, setTags] = useState<string[]>([]);
 
     useEffect(() => {
-        async function fetchListing() {
+        async function fetchVendor() {
             try {
-                const response = await fetch(`${BACKEND_URL}/listings/${listingId}`, {
+                const response = await fetch(`${BACKEND_URL}/vendors/me/${vendorId}`, {
                     credentials: 'include',
                 });
 
                 if (!response.ok) {
-                    router.push('/marketplace');
+                    router.push('/dashboard');
                     return;
                 }
 
                 const data = await response.json();
                 if (data.success && data.data) {
-                    setListing(data.data);
+                    setVendor(data.data);
                 } else {
-                    router.push('/marketplace');
+                    router.push('/dashboard');
                 }
             } catch (err) {
-                console.error('Error fetching listing:', err);
-                setError('Failed to load listing');
+                console.error('Error fetching vendor:', err);
+                setError('Failed to load vendor');
+                router.push('/dashboard');
             } finally {
                 setLoading(false);
             }
         }
 
-        fetchListing();
-    }, [listingId, router]);
+        fetchVendor();
+    }, [vendorId, router]);
+
+    const addVariant = () => {
+        if (variantInput.trim() && !variants.includes(variantInput.trim())) {
+            setVariants([...variants, variantInput.trim()]);
+            setVariantInput("");
+        }
+    };
+
+    const removeVariant = (variant: string) => {
+        setVariants(variants.filter(v => v !== variant));
+    };
+
+    const addImage = () => {
+        if (imageInput.trim() && !images.includes(imageInput.trim())) {
+            setImages([...images, imageInput.trim()]);
+            setImageInput("");
+        }
+    };
+
+    const removeImage = (image: string) => {
+        setImages(images.filter(i => i !== image));
+    };
+
+    const addTag = () => {
+        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+            setTags([...tags, tagInput.trim()]);
+            setTagInput("");
+        }
+    };
+
+    const removeTag = (tag: string) => {
+        setTags(tags.filter(t => t !== tag));
+    };
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -66,22 +106,7 @@ export default function EditListingPage() {
 
         const formData = new FormData(e.currentTarget);
 
-        const variants = (formData.get('variants') as string)
-            .split(',')
-            .map(v => v.trim())
-            .filter(v => v.length > 0);
-
-        const tags = (formData.get('tags') as string)
-            .split(',')
-            .map(t => t.trim())
-            .filter(t => t.length > 0);
-
-        const images = (formData.get('images') as string)
-            .split(',')
-            .map(i => i.trim())
-            .filter(i => i.length > 0);
-
-        const updateData = {
+        const listingData = {
             name: formData.get('name'),
             description: formData.get('description'),
             type: formData.get('type'),
@@ -90,35 +115,35 @@ export default function EditListingPage() {
             availableQty: formData.get('availableQty') ? parseInt(formData.get('availableQty') as string) : null,
             isAvailable: formData.get('isAvailable') === 'on',
             managed: formData.get('managed') === 'on',
-            images: images.length > 0 ? images : listing.images,
-            variants: variants.length > 0 ? variants : [],
-            tags: tags.length > 0 ? tags : [],
+            images,
+            variants,
+            tags,
         };
 
         try {
-            const response = await fetch(`${BACKEND_URL}/vendors/${listing.vendorId}/listings/${listingId}`, {
-                method: 'PUT',
+            const response = await fetch(`${BACKEND_URL}/vendors/${vendorId}/listings`, {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify(updateData),
+                body: JSON.stringify(listingData),
             });
 
             const data = await response.json();
 
             if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Failed to update listing');
+                throw new Error(data.message || 'Failed to create listing');
             }
 
-            router.push(`/marketplace/${listingId}`);
+            router.push(`/marketplace/${data.data.id}`);
         } catch (err: any) {
-            console.error('Error updating listing:', err);
+            console.error('Error creating listing:', err);
 
             if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
                 setError(`Cannot connect to backend server at ${BACKEND_URL}. Please ensure the backend is running.`);
             } else {
-                setError(err.message || 'Failed to update listing');
+                setError(err.message || 'Failed to create listing');
             }
         } finally {
             setSubmitting(false);
@@ -133,7 +158,7 @@ export default function EditListingPage() {
         );
     }
 
-    if (!listing) {
+    if (!vendor) {
         return null;
     }
 
@@ -142,17 +167,17 @@ export default function EditListingPage() {
 
             <main className="container mx-auto px-6 py-12 max-w-4xl">
                 <Button asChild variant="ghost" className="mb-8 rounded-2xl">
-                    <Link href={`/marketplace/${listingId}`}>
+                    <Link href={`/vendor/${vendorId}`}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Listing
+                        Back to Vendor
                     </Link>
                 </Button>
 
                 <div className="glass-card rounded-3xl p-10 shadow-soft border-0">
                     <div className="mb-8">
-                        <h2 className="text-3xl font-light mb-2 text-foreground">Edit Listing</h2>
+                        <h2 className="text-3xl font-light mb-2 text-foreground">Create New Listing</h2>
                         <p className="text-muted-foreground">
-                            Update listing details for {listing.vendor?.name}
+                            Add a new product or service for {vendor.name}
                         </p>
                     </div>
 
@@ -169,7 +194,6 @@ export default function EditListingPage() {
                             <Input
                                 id="name"
                                 name="name"
-                                defaultValue={listing.name}
                                 placeholder="e.g., Vintage T-Shirt"
                                 required
                                 maxLength={100}
@@ -183,7 +207,6 @@ export default function EditListingPage() {
                             <Textarea
                                 id="description"
                                 name="description"
-                                defaultValue={listing.description}
                                 placeholder="Describe your listing..."
                                 rows={4}
                                 required
@@ -196,7 +219,7 @@ export default function EditListingPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="type">Type *</Label>
-                                <Select name="type" defaultValue={listing.type}>
+                                <Select name="type" required>
                                     <SelectTrigger className="rounded-xl">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
@@ -209,7 +232,7 @@ export default function EditListingPage() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="inventoryType">Inventory Type *</Label>
-                                <Select name="inventoryType" defaultValue={listing.inventoryType}>
+                                <Select name="inventoryType" required>
                                     <SelectTrigger className="rounded-xl">
                                         <SelectValue placeholder="Select inventory type" />
                                     </SelectTrigger>
@@ -231,7 +254,6 @@ export default function EditListingPage() {
                                     type="number"
                                     step="0.01"
                                     min="0"
-                                    defaultValue={listing.price?.toString() || ''}
                                     placeholder="0.00"
                                     className="rounded-xl"
                                 />
@@ -245,7 +267,6 @@ export default function EditListingPage() {
                                     name="availableQty"
                                     type="number"
                                     min="0"
-                                    defaultValue={listing.availableQty?.toString() || ''}
                                     placeholder="0"
                                     className="rounded-xl"
                                 />
@@ -255,11 +276,7 @@ export default function EditListingPage() {
 
                         {/* Is Available */}
                         <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="isAvailable"
-                                name="isAvailable"
-                                defaultChecked={listing.isAvailable !== false}
-                            />
+                            <Checkbox id="isAvailable" name="isAvailable" defaultChecked />
                             <Label htmlFor="isAvailable" className="cursor-pointer">
                                 Available for purchase
                             </Label>
@@ -268,11 +285,7 @@ export default function EditListingPage() {
                         {/* Managed */}
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="managed"
-                                    name="managed"
-                                    defaultChecked={listing.managed === true}
-                                />
+                                <Checkbox id="managed" name="managed" />
                                 <Label htmlFor="managed" className="cursor-pointer">
                                     Enable order management
                                 </Label>
@@ -285,41 +298,101 @@ export default function EditListingPage() {
 
                         {/* Images */}
                         <div className="space-y-2">
-                            <Label htmlFor="images">Images (comma-separated URLs)</Label>
-                            <Textarea
-                                id="images"
-                                name="images"
-                                defaultValue={listing.images?.join(', ') || ''}
-                                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                                rows={2}
-                                className="rounded-xl resize-none"
-                            />
+                            <Label>Images</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={imageInput}
+                                    onChange={(e) => setImageInput(e.target.value)}
+                                    placeholder="Image URL"
+                                    className="rounded-xl"
+                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
+                                />
+                                <Button type="button" onClick={addImage} className="rounded-xl">
+                                    Add
+                                </Button>
+                            </div>
+                            {images.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {images.map((image, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
+                                            <span className="text-sm truncate max-w-[200px]">{image}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(image)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Variants */}
                         <div className="space-y-2">
-                            <Label htmlFor="variants">Variants</Label>
-                            <Input
-                                id="variants"
-                                name="variants"
-                                defaultValue={listing.variants?.join(', ') || ''}
-                                placeholder="e.g., S, M, L, XL"
-                                className="rounded-xl"
-                            />
-                            <p className="text-xs text-muted-foreground">Comma-separated values</p>
+                            <Label>Variants</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={variantInput}
+                                    onChange={(e) => setVariantInput(e.target.value)}
+                                    placeholder="e.g., Small, Medium, Large"
+                                    className="rounded-xl"
+                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariant())}
+                                />
+                                <Button type="button" onClick={addVariant} className="rounded-xl">
+                                    Add
+                                </Button>
+                            </div>
+                            {variants.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {variants.map((variant, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
+                                            <span className="text-sm">{variant}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeVariant(variant)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Tags */}
                         <div className="space-y-2">
-                            <Label htmlFor="tags">Tags</Label>
-                            <Input
-                                id="tags"
-                                name="tags"
-                                defaultValue={listing.tags?.map((t: any) => t.name).join(', ') || ''}
-                                placeholder="e.g., electronics, new, trending"
-                                className="rounded-xl"
-                            />
-                            <p className="text-xs text-muted-foreground">Comma-separated tags</p>
+                            <Label>Tags</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                    placeholder="e.g., electronics, new"
+                                    className="rounded-xl"
+                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                                />
+                                <Button type="button" onClick={addTag} className="rounded-xl">
+                                    Add
+                                </Button>
+                            </div>
+                            {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {tags.map((tag, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
+                                            <span className="text-sm">{tag}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTag(tag)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
@@ -330,14 +403,14 @@ export default function EditListingPage() {
                                 asChild
                                 className="flex-1 rounded-2xl glass-light"
                             >
-                                <Link href={`/marketplace/${listingId}`}>Cancel</Link>
+                                <Link href={`/vendor/${vendorId}`}>Cancel</Link>
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={submitting}
                                 className="flex-1 rounded-2xl bg-black hover:bg-gray-900 text-white"
                             >
-                                {submitting ? 'Saving...' : 'Save Changes'}
+                                {submitting ? 'Creating...' : 'Create Listing'}
                             </Button>
                         </div>
                     </form>

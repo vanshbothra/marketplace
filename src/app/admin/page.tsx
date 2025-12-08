@@ -67,22 +67,7 @@ export default async function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-pink-50">
-            {/* Header */}
-            <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Link href="/" className="flex items-center gap-2">
-                            <Store className="h-6 w-6 text-purple-600" />
-                            <h1 className="text-2xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                Ashoka Marketplace
-                            </h1>
-                        </Link>
-                    </div>
-                    <UserNav />
-                </div>
-            </header>
-
+        <div className="min-h-screen bg-gradient-soft">
             {/* Main Content */}
             <main className="container mx-auto px-4 py-8">
                 <h2 className="text-3xl font-bold mb-8">Admin Panel</h2>
