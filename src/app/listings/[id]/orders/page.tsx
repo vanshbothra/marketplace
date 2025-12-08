@@ -1,126 +1,117 @@
-import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
-import { Store, ArrowLeft, Package, User, Calendar } from "lucide-react";
-import { UserNav } from "@/components/user-nav";
+import { ArrowLeft, Package } from "lucide-react";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { OrdersTable } from "./orders-table";
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+
+type OrderStatus = "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
+
+interface Order {
+    id: string;
+    quantity: number;
+    totalPrice: string;
+    status: OrderStatus;
+    transactionId?: string | null;
+    notes?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        phone?: string | null;
+        address?: string | null;
+    };
+    listing: {
+        id: string;
+        name: string;
+        price: string;
+        images?: string[];
+    };
+}
+
+async function fetchListingOrders(listingId: string): Promise<Order[]> {
+    try {
+        const cookieStore = await cookies();
+        const cookieHeader = cookieStore.toString();
+
+        const response = await fetch(`${BACKEND_URL}/listings/${listingId}/orders`, {
+            cache: 'no-store',
+            headers: {
+                'Cookie': cookieHeader,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Failed to fetch listing orders: ${response.status} ${response.statusText}`, errorData);
+            return [];
+        }
+
+        const data = await response.json();
+        return data.data || [];
+    } catch (error) {
+        console.error('Error fetching listing orders:', error);
+        return [];
+    }
+}
+
+async function fetchListing(listingId: string) {
+    try {
+        const cookieStore = await cookies();
+        const cookieHeader = cookieStore.toString();
+
+        const response = await fetch(`${BACKEND_URL}/listings/${listingId}`, {
+            cache: 'no-store',
+            headers: {
+                'Cookie': cookieHeader,
+            },
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data = await response.json();
+        return data.data;
+    } catch (error) {
+        console.error('Error fetching listing:', error);
+        return null;
+    }
+}
 
 export default async function ListingOrdersPage({
     params,
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const session = await auth();
     const { id } = await params;
 
-    // TODO: Fetch listing and orders from backend API
-    // Dummy data for now
-    const listing = {
-        id: id,
-        name: "Sample Product",
-        vendor: {
-            id: "1",
-            name: "Sample Vendor",
-            owners: [
-                { id: "1", name: "Sample Owner", email: "owner@ashoka.edu.in" },
-            ],
-            members: [
-                { id: "2", name: "Sample Member", email: "member@ashoka.edu.in" },
-            ],
-        },
-    };
+    // Fetch listing and orders
+    const [listing, orders] = await Promise.all([
+        fetchListing(id),
+        fetchListingOrders(id)
+    ]);
 
-    // TODO: Replace hardcoded check with actual JWT user check
-    const isAuthorized = listing.vendor.owners.some(o => o.id === "1") || listing.vendor.members.some(m => m.id === "1");
-
-    if (!isAuthorized) {
+    if (!listing) {
         notFound();
     }
 
-    // Dummy orders data
-    const orders = [
-        {
-            id: "ORD-001",
-            quantity: 2,
-            totalPrice: 200,
-            status: "PENDING" as const,
-            createdAt: new Date("2024-01-15"),
-            user: {
-                id: "u1",
-                name: "John Doe",
-                email: "john@ashoka.edu.in",
-            },
-        },
-        {
-            id: "ORD-002",
-            quantity: 1,
-            totalPrice: 100,
-            status: "CONFIRMED" as const,
-            createdAt: new Date("2024-01-14"),
-            user: {
-                id: "u2",
-                name: "Jane Smith",
-                email: "jane@ashoka.edu.in",
-            },
-        },
-        {
-            id: "ORD-003",
-            quantity: 3,
-            totalPrice: 300,
-            status: "COMPLETED" as const,
-            createdAt: new Date("2024-01-10"),
-            user: {
-                id: "u3",
-                name: "Bob Johnson",
-                email: "bob@ashoka.edu.in",
-            },
-        },
-        {
-            id: "ORD-004",
-            quantity: 1,
-            totalPrice: 100,
-            status: "CANCELLED" as const,
-            createdAt: new Date("2024-01-08"),
-            user: {
-                id: "u4",
-                name: "Alice Williams",
-                email: "alice@ashoka.edu.in",
-            },
-        },
-    ];
-
     const pendingOrders = orders.filter(o => o.status === "PENDING" || o.status === "CONFIRMED");
-    const completedOrders = orders.filter(o => o.status === "COMPLETED");
-    const cancelledOrders = orders.filter(o => o.status === "CANCELLED");
-
-    const getStatusBadge = (status: string) => {
-        const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className: string }> = {
-            PENDING: { variant: "secondary", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-            CONFIRMED: { variant: "default", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-            COMPLETED: { variant: "default", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-            CANCELLED: { variant: "destructive", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-        };
-
-        const config = variants[status] || variants.PENDING;
-        return (
-            <Badge variant={config.variant} className={`${config.className} rounded-full`}>
-                {status}
-            </Badge>
-        );
-    };
+    const deliveredOrders = orders.filter(o => o.status === "DELIVERED");
 
     return (
         <div className="min-h-screen bg-gradient-soft">
-
             {/* Main Content */}
             <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
                 <Button asChild variant="ghost" className="mb-6 sm:mb-8 rounded-2xl">
@@ -149,11 +140,27 @@ export default async function ListingOrdersPage({
                                 <p className="text-xs text-muted-foreground">Pending</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-light text-foreground">{completedOrders.length}</p>
-                                <p className="text-xs text-muted-foreground">Completed</p>
+                                <p className="text-2xl font-light text-foreground">{deliveredOrders.length}</p>
+                                <p className="text-xs text-muted-foreground">Delivered</p>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex gap-4 mb-6">
+                    <Select defaultValue="all">
+                        <SelectTrigger className="w-48 rounded-2xl glass-light border-0">
+                            <SelectValue placeholder="Filter by status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Orders</SelectItem>
+                            <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                            <SelectItem value="DELIVERED">Delivered</SelectItem>
+                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Orders Table */}
@@ -166,58 +173,7 @@ export default async function ListingOrdersPage({
                         </p>
                     </div>
                 ) : (
-                    <div className="glass-card rounded-xl shadow-soft border-0 overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-b border-white/10 hover:bg-transparent">
-                                    <TableHead className="text-foreground font-semibold">Order ID</TableHead>
-                                    <TableHead className="text-foreground font-semibold">Customer</TableHead>
-                                    <TableHead className="text-foreground font-semibold">Quantity</TableHead>
-                                    <TableHead className="text-foreground font-semibold">Total Price</TableHead>
-                                    <TableHead className="text-foreground font-semibold">Status</TableHead>
-                                    <TableHead className="text-foreground font-semibold">Date</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {orders.map((order) => (
-                                    <TableRow
-                                        key={order.id}
-                                        className="border-b border-white/10 hover:bg-white/5 transition-colors"
-                                    >
-                                        <TableCell className="font-medium text-foreground">
-                                            {order.id}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <User className="h-4 w-4 text-muted-foreground" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-foreground">{order.user.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{order.user.email}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-foreground">
-                                            {order.quantity}
-                                        </TableCell>
-                                        <TableCell className="text-foreground font-medium">
-                                            ₹{order.totalPrice}
-                                        </TableCell>
-                                        <TableCell>
-                                            {getStatusBadge(order.status)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2 text-muted-foreground">
-                                                <Calendar className="h-4 w-4" />
-                                                <span className="text-sm">
-                                                    {order.createdAt.toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <OrdersTable orders={orders} listingId={id} />
                 )}
             </main>
         </div>

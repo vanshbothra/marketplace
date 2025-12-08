@@ -19,54 +19,73 @@ import {
 import Link from "next/link";
 import { Store, ArrowLeft } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
+import { cookies } from "next/headers";
 
-type OrderStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+type OrderStatus = "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
 
 interface Order {
     id: string;
     listing: {
         id: string;
         name: string;
-    };
-    vendor: {
-        id: string;
-        name: string;
+        vendor: {
+            id: string;
+            name: string;
+            logo: string;
+        };
     };
     quantity: number;
-    totalPrice: number;
+    totalPrice: string;
     status: OrderStatus;
-    createdAt: Date;
+    transactionId?: string | null;
+    notes?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+async function fetchUserOrders(): Promise<Order[]> {
+    try {
+        const apiUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+        const url = `${apiUrl}/orders/me`;
+        const cookieStore = await cookies();
+        const cookieHeader = cookieStore.toString();
+
+        const response = await fetch(url, {
+            headers: {
+                'Cookie': cookieHeader,
+            },
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to fetch orders:', response.statusText, errorText);
+            return [];
+        }
+
+        const data = await response.json();
+        return data.data || [];
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        return [];
+    }
 }
 
 export default async function OrdersPage() {
     const session = await auth();
 
-    // TODO: Fetch orders from backend API
-    // Dummy data for now
-    const orders: Order[] = [
-        {
-            id: "1",
-            listing: { id: "1", name: "Sample Product" },
-            vendor: { id: "1", name: "Sample Vendor" },
-            quantity: 2,
-            totalPrice: 200,
-            status: "COMPLETED",
-            createdAt: new Date(Date.now() - 86400000 * 7),
-        },
-        {
-            id: "2",
-            listing: { id: "2", name: "Sample Service" },
-            vendor: { id: "2", name: "Sample Vendor 2" },
-            quantity: 1,
-            totalPrice: 50,
-            status: "PENDING",
-            createdAt: new Date(Date.now() - 86400000 * 2),
-        },
-    ];
+    let orders: Order[] = [];
+
+    try {
+        orders = await fetchUserOrders();
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        orders = [];
+    }
 
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
-            case "COMPLETED":
+            case "DELIVERED":
                 return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
             case "CONFIRMED":
                 return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
@@ -106,7 +125,7 @@ export default async function OrdersPage() {
                             <SelectItem value="all">All Orders</SelectItem>
                             <SelectItem value="PENDING">Pending</SelectItem>
                             <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                            <SelectItem value="DELIVERED">Delivered</SelectItem>
                             <SelectItem value="CANCELLED">Cancelled</SelectItem>
                         </SelectContent>
                     </Select>
@@ -153,26 +172,26 @@ export default async function OrdersPage() {
                             <TableBody>
                                 {orders.map((order) => (
                                     <TableRow key={order.id} className="border-b border-white/10 hover:bg-white/5">
-                                        <TableCell className="font-medium text-foreground">#{order.id}</TableCell>
+                                        <TableCell className="font-medium text-foreground">#{order.id.slice(0, 8)}</TableCell>
                                         <TableCell>
                                             <Link href={`/marketplace/${order.listing.id}`} className="text-foreground hover:underline">
                                                 {order.listing.name}
                                             </Link>
                                         </TableCell>
                                         <TableCell>
-                                            <Link href={`/vendor/${order.vendor.id}`} className="text-muted-foreground hover:underline">
-                                                {order.vendor.name}
+                                            <Link href={`/vendor/${order.listing.vendor.id}`} className="text-muted-foreground hover:underline">
+                                                {order.listing.vendor.name}
                                             </Link>
                                         </TableCell>
                                         <TableCell className="text-foreground">{order.quantity}</TableCell>
-                                        <TableCell className="text-foreground font-medium">₹{order.totalPrice}</TableCell>
+                                        <TableCell className="text-foreground font-medium">₹{parseFloat(order.totalPrice).toFixed(2)}</TableCell>
                                         <TableCell>
                                             <Badge className={`rounded-full ${getStatusColor(order.status)}`}>
                                                 {order.status}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {order.createdAt.toLocaleDateString()}
+                                            {new Date(order.createdAt).toLocaleDateString()}
                                         </TableCell>
                                     </TableRow>
                                 ))}

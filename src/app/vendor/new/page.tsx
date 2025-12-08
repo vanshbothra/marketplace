@@ -33,6 +33,8 @@ export default function NewVendorPage() {
             description: formData.get('description'),
             contactEmail: formData.get('contactEmail'),
             contactPhone: formData.get('contactPhone'),
+            upiId: formData.get('upiId'),
+            paymentInformation: formData.get('paymentInformation'),
             logo: formData.get('logo') || undefined,
             categories: categories.length > 0 ? categories : ['PRODUCT'],
         };
@@ -166,6 +168,43 @@ export default function NewVendorPage() {
                             />
                             <p className="text-xs text-muted-foreground">
                                 Phone number for customer support
+                            </p>
+                        </div>
+
+                        {/* UPI ID */}
+                        <div className="space-y-2">
+                            <Label htmlFor="upiId" className="text-sm font-medium text-foreground">
+                                UPI ID *
+                            </Label>
+                            <Input
+                                id="upiId"
+                                name="upiId"
+                                type="text"
+                                placeholder="UPI ID"
+                                required
+                                className="rounded-xl border-border focus:border-ring"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                UPI ID for payment processing
+                            </p>
+                        </div>
+
+                        {/* Payment Information */}
+                        <div className="space-y-2">
+                            <Label htmlFor="paymentInformation" className="text-sm font-medium text-foreground">
+                                Payment Information *
+                            </Label>
+                            <Textarea
+                                id="paymentInformation"
+                                name="paymentInformation"
+                                placeholder="Payment information..."
+                                rows={4}
+                                required
+                                maxLength={500}
+                                className="rounded-xl border-border focus:border-ring resize-none"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Payment information for processing payments
                             </p>
                         </div>
 

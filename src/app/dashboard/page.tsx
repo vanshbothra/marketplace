@@ -3,33 +3,75 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Store, Plus, Package, Clock } from "lucide-react";
+import { Store, Plus, Package, Clock, Crown, Users } from "lucide-react";
+import { cookies } from "next/headers";
+
+interface Vendor {
+    id: string;
+    name: string;
+    logo: string;
+    description: string;
+    categories: string[];
+    isVerified: boolean;
+    isActive: boolean;
+    contactEmail: string;
+    contactPhone: string;
+    paymentInformation?: string | null;
+    upiId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    isOwner: boolean;
+    isMember: boolean;
+    _count: {
+        listings: number;
+        members: number;
+    };
+}
+
+async function fetchUserVendors(): Promise<Vendor[]> {
+    try {
+        const apiUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+        const url = `${apiUrl}/vendors/me`;
+
+        console.log('Fetching vendors from:', url);
+        const cookieStore = await cookies();
+        const cookieHeader = cookieStore.toString();
+
+        const response = await fetch(url, {
+            headers: {
+                'Cookie': cookieHeader,
+            },
+            cache: 'no-store',
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to fetch vendors:', response.statusText, errorText);
+            return [];
+        }
+
+        const data = await response.json();
+        console.log('Vendors data:', data);
+        return data.data || [];
+    } catch (error) {
+        console.error('Error fetching vendors:', error);
+        return [];
+    }
+}
 
 export default async function DashboardPage() {
     const session = await auth();
 
+    let vendors: Vendor[] = [];
 
-    // TODO: Fetch user's vendors from backend API
-    // Dummy data for now
-    const vendors = [
-        {
-            id: "1",
-            name: "Sample Vendor",
-            logo: "/placeholder-logo.png",
-            description: "This is a sample vendor. Replace with backend API call.",
-            categories: ["PRODUCT", "SERVICE"],
-            isVerified: true,
-            isActive: true,
-            contactEmail: "a@b.com",
-            contactPhone: "+1234567890",
-            listings: [],
-            owners: [{ id: "1", name: "Vansh Bothra", email: "a@b.com" }],
-            members: [],
-            _count: {
-                listings: 0,
-            },
-        },
-    ];
+    try {
+        vendors = await fetchUserVendors();
+    } catch (error) {
+        console.error('Error fetching vendors:', error);
+        vendors = [];
+    }
 
     const vendorCount = vendors.length;
     const canCreateVendor = vendorCount < 5;
@@ -84,12 +126,32 @@ export default async function DashboardPage() {
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">
                                             <h3 className="text-2xl font-light mb-2 text-foreground dark:text-foreground">{vendor.name}</h3>
-                                            <Badge
-                                                variant={vendor.isVerified ? "default" : "secondary"}
-                                                className="rounded-full glass text-black dark:text-white"
-                                            >
-                                                {vendor.isVerified ? "VERIFIED" : "PENDING"}
-                                            </Badge>
+                                            <div className="flex gap-2 flex-wrap">
+                                                <Badge
+                                                    variant={vendor.isVerified ? "default" : "secondary"}
+                                                    className="rounded-full glass text-black dark:text-white"
+                                                >
+                                                    {vendor.isVerified ? "VERIFIED" : "PENDING"}
+                                                </Badge>
+                                                {vendor.isOwner && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="rounded-full glass-light text-black dark:text-white border-amber-500/50"
+                                                    >
+                                                        <Crown className="h-3 w-3 mr-1" />
+                                                        Owner
+                                                    </Badge>
+                                                )}
+                                                {vendor.isMember && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="rounded-full glass-light text-black dark:text-white border-blue-500/50"
+                                                    >
+                                                        <Users className="h-3 w-3 mr-1" />
+                                                        Member
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     <p className="text-sm text-muted-foreground line-clamp-2 mb-4">

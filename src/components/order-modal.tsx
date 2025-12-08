@@ -183,6 +183,7 @@ export function OrderModal({ listing, children }: OrderModalProps) {
                             onChange={(e) => setTransactionId(e.target.value)}
                             placeholder="Enter UPI transaction ID"
                             className="rounded-xl"
+                            required
                         />
                         <p className="text-xs text-muted-foreground">
                             Enter the transaction ID after completing payment
