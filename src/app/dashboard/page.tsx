@@ -32,8 +32,6 @@ async function fetchUserVendors(): Promise<Vendor[]> {
     try {
         const apiUrl = process.env.BACKEND_URL || 'http://localhost:4000';
         const url = `${apiUrl}/vendors/me`;
-
-        console.log('Fetching vendors from:', url);
         const cookieStore = await cookies();
         const cookieHeader = cookieStore.toString();
 
@@ -44,8 +42,6 @@ async function fetchUserVendors(): Promise<Vendor[]> {
             cache: 'no-store',
         });
 
-        console.log('Response status:', response.status);
-
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Failed to fetch vendors:', response.statusText, errorText);
@@ -53,7 +49,6 @@ async function fetchUserVendors(): Promise<Vendor[]> {
         }
 
         const data = await response.json();
-        console.log('Vendors data:', data);
         return data.data || [];
     } catch (error) {
         console.error('Error fetching vendors:', error);
