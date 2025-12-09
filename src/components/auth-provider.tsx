@@ -79,8 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success && data.data) {
-                        const userData = data.data;
+                    if (data.success && data.data && data.data.user) {
+                        // Backend returns data.data.user
+                        const userData = data.data.user;
                         setUser(userData);
                         setIsAuthenticated(true);
 
@@ -105,8 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                         if (retryResponse.ok) {
                             const data = await retryResponse.json();
-                            if (data.success && data.data) {
-                                const userData = data.data;
+                            if (data.success && data.data && data.data.user) {
+                                // Backend returns data.data.user
+                                const userData = data.data.user;
                                 setUser(userData);
                                 setIsAuthenticated(true);
 

@@ -50,8 +50,9 @@ export function UserNav() {
                     const data = await response.json();
                     console.log('UserNav - fetched user data:', data);
 
-                    if (data.success && data.data) {
-                        setUser(data.data);
+                    if (data.success && data.data && data.data.user) {
+                        // Backend returns data.data.user
+                        setUser(data.data.user);
                     } else {
                         setUser(null);
                     }
