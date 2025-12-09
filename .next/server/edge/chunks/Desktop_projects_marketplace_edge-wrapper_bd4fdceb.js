@@ -1,0 +1,3 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/Desktop_projects_marketplace_edge-wrapper_bd4fdceb.js",55703,(e,t,r)=>{self._ENTRIES||={};let h=Promise.resolve().then(()=>e.i(10583));h.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(h,{get(e,t){if("then"===t)return(t,r)=>e.then(t,r);let r=(...r)=>e.then(e=>(0,e[t])(...r));return r.then=(r,h)=>e.then(e=>e[t]).then(r,h),r}})}]);
+
+//# sourceMappingURL=Desktop_projects_marketplace_edge-wrapper_bd4fdceb.js.map

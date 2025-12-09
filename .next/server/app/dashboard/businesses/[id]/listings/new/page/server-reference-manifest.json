@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40fa93f47a7da217b6f82f361c648320de99c3ae02": {
+      "workers": {
+        "app/dashboard/businesses/[id]/listings/new/page": {
+          "moduleId": 11404,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "Desktop/projects/marketplace/src/app/dashboard/businesses/[id]/listings/new/page.tsx"
+        }
+      },
+      "layer": {
+        "app/dashboard/businesses/[id]/listings/new/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "Desktop/projects/marketplace/src/app/dashboard/businesses/[id]/listings/new/page.tsx"
+    }
+  },
+  "edge": {}
+}
