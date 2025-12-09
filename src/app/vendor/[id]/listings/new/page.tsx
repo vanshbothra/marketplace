@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { Store, ArrowLeft } from "lucide-react";
+import { Store, ArrowLeft, Upload, X } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const MAX_IMAGES = 3;
 
 export default function NewListingPage() {
     const params = useParams();
@@ -31,8 +33,8 @@ export default function NewListingPage() {
     const [error, setError] = useState<string | null>(null);
     const [variantInput, setVariantInput] = useState("");
     const [variants, setVariants] = useState<string[]>([]);
-    const [imageInput, setImageInput] = useState("");
-    const [images, setImages] = useState<string[]>([]);
+    const [images, setImages] = useState<string[]>([]); // Base64 encoded images
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]); // For preview
     const [tagInput, setTagInput] = useState("");
     const [tags, setTags] = useState<string[]>([]);
 
@@ -77,15 +79,101 @@ export default function NewListingPage() {
         setVariants(variants.filter(v => v !== variant));
     };
 
-    const addImage = () => {
-        if (imageInput.trim() && !images.includes(imageInput.trim())) {
-            setImages([...images, imageInput.trim()]);
-            setImageInput("");
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        const remainingSlots = MAX_IMAGES - images.length;
+        if (remainingSlots <= 0) {
+            setError(`Maximum ${MAX_IMAGES} images allowed`);
+            return;
         }
+
+        const filesToProcess = Array.from(files).slice(0, remainingSlots);
+        const newImages: string[] = [];
+        const newPreviews: string[] = [];
+
+        for (const file of filesToProcess) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('Only image files are allowed');
+                continue;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setError('Image size must be less than 5MB');
+                continue;
+            }
+
+            try {
+                // Compress and convert to base64
+                const compressedBase64 = await compressImage(file);
+                newImages.push(compressedBase64);
+                newPreviews.push(URL.createObjectURL(file));
+            } catch (error) {
+                console.error('Error processing image:', error);
+                setError('Failed to process image');
+            }
+        }
+
+        setImages([...images, ...newImages]);
+        setImagePreviews([...imagePreviews, ...newPreviews]);
+        setError(null);
+
+        // Reset input
+        e.target.value = '';
     };
 
-    const removeImage = (image: string) => {
-        setImages(images.filter(i => i !== image));
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new window.Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Resize if image is too large (max 1920px on longest side for better quality)
+                    const maxSize = 1920;
+                    if (width > height && width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Failed to get canvas context'));
+                        return;
+                    }
+
+                    // Enable image smoothing for better quality
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Compress to JPEG with 0.92 quality (higher quality, still good compression)
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+                    resolve(compressedBase64);
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+        });
+    };
+
+    const removeImage = (index: number) => {
+        setImages(images.filter((_, i) => i !== index));
+        setImagePreviews(imagePreviews.filter((_, i) => i !== index));
     };
 
     const addTag = () => {
@@ -298,35 +386,64 @@ export default function NewListingPage() {
 
                         {/* Images */}
                         <div className="space-y-2">
-                            <Label>Images</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={imageInput}
-                                    onChange={(e) => setImageInput(e.target.value)}
-                                    placeholder="Image URL"
-                                    className="rounded-xl"
-                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
-                                />
-                                <Button type="button" onClick={addImage} className="rounded-xl">
-                                    Add
-                                </Button>
-                            </div>
+                            <Label>Images (Max {MAX_IMAGES})</Label>
+                            <p className="text-xs text-muted-foreground">
+                                The first image will be the primary image displayed in listings
+                            </p>
+
+                            {images.length < MAX_IMAGES && (
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageUpload}
+                                        className="rounded-xl"
+                                        id="image-upload"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => document.getElementById('image-upload')?.click()}
+                                        className="rounded-xl"
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload
+                                    </Button>
+                                </div>
+                            )}
+
                             {images.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {images.map((image, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
-                                            <span className="text-sm truncate max-w-[200px]">{image}</span>
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                    {imagePreviews.map((preview, idx) => (
+                                        <div key={idx} className="relative group">
+                                            <div className="aspect-square relative rounded-xl overflow-hidden border-2 border-border">
+                                                <Image
+                                                    src={preview}
+                                                    alt={`Upload ${idx + 1}`}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                            {idx === 0 && (
+                                                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                                                    Primary
+                                                </div>
+                                            )}
                                             <button
                                                 type="button"
-                                                onClick={() => removeImage(image)}
-                                                className="text-red-500 hover:text-red-700"
+                                                onClick={() => removeImage(idx)}
+                                                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
-                                                ×
+                                                <X className="h-4 w-4" />
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
+                            <p className="text-xs text-muted-foreground">
+                                {images.length} / {MAX_IMAGES} images uploaded
+                            </p>
                         </div>
 
                         {/* Variants */}

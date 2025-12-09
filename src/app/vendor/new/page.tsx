@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { Store, ArrowLeft } from "lucide-react";
+import { Store, ArrowLeft, Upload, X } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
@@ -16,6 +17,90 @@ export default function NewVendorPage() {
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [logoImage, setLogoImage] = useState<string>(''); // Base64 encoded logo
+    const [logoPreview, setLogoPreview] = useState<string>(''); // For preview
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Only image files are allowed');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Image size must be less than 5MB');
+            return;
+        }
+
+        try {
+            // Compress and convert to base64
+            const compressedBase64 = await compressImage(file);
+            setLogoImage(compressedBase64);
+            setLogoPreview(URL.createObjectURL(file));
+            setError(null);
+        } catch (error) {
+            console.error('Error processing image:', error);
+            setError('Failed to process image');
+        }
+
+        // Reset input
+        e.target.value = '';
+    };
+
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new window.Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Resize if image is too large (max 800px for logo)
+                    const maxSize = 800;
+                    if (width > height && width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Failed to get canvas context'));
+                        return;
+                    }
+
+                    // Enable image smoothing for better quality
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Compress to JPEG with 0.95 quality (very high quality for logo)
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.95);
+                    resolve(compressedBase64);
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+        });
+    };
+
+    const removeLogo = () => {
+        setLogoImage('');
+        setLogoPreview('');
+    };
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -35,7 +120,7 @@ export default function NewVendorPage() {
             contactPhone: formData.get('contactPhone'),
             upiId: formData.get('upiId'),
             paymentInformation: formData.get('paymentInformation'),
-            logo: formData.get('logo') || undefined,
+            logo: logoImage || undefined, // Use uploaded image or undefined
             categories: categories.length > 0 ? categories : ['PRODUCT'],
         };
 
@@ -208,21 +293,51 @@ export default function NewVendorPage() {
                             </p>
                         </div>
 
-                        {/* Logo URL */}
+                        {/* Logo Upload */}
                         <div className="space-y-2">
-                            <Label htmlFor="logo" className="text-sm font-medium text-foreground">
-                                Logo URL
+                            <Label className="text-sm font-medium text-foreground">
+                                Vendor Logo
                             </Label>
-                            <Input
-                                id="logo"
-                                name="logo"
-                                type="url"
-                                placeholder="https://example.com/logo.png"
-                                className="rounded-xl border-border focus:border-ring"
-                            />
                             <p className="text-xs text-muted-foreground">
-                                Optional: Provide a URL to your vendor logo
+                                Upload a logo for your vendor (optional, max 5MB)
                             </p>
+
+                            {!logoPreview ? (
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleLogoUpload}
+                                        className="rounded-xl"
+                                        id="logo-upload"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => document.getElementById('logo-upload')?.click()}
+                                        className="rounded-xl"
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-border group">
+                                    <Image
+                                        src={logoPreview}
+                                        alt="Logo preview"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={removeLogo}
+                                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Categories */}

@@ -7,6 +7,7 @@ import { UserNav } from "@/components/user-nav";
 import { WishlistButton } from "@/components/wishlist-button";
 import { OrderModal } from "@/components/order-modal";
 import { ReviewModal } from "@/components/review-modal";
+import { ImageSlideshow } from "@/components/image-slideshow";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
@@ -102,18 +103,9 @@ export default async function ListingDetailPage({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
-                        {/* Images */}
+                        {/* Images Slideshow */}
                         {listing.images && listing.images.length > 0 && (
-                            <div className="glass-card rounded-3xl overflow-hidden shadow-soft border-0">
-                                <div className="aspect-video relative bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
-                                    <Image
-                                        src={listing.images[0]}
-                                        alt={listing.name}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            </div>
+                            <ImageSlideshow images={listing.images} alt={listing.name} />
                         )}
 
                         {/* Listing Info */}
@@ -177,21 +169,40 @@ export default async function ListingDetailPage({
                             {listing.managed ? (
                                 // Managed listing - show order button
                                 listing.price !== null && listing.price !== undefined ? (
-                                    <OrderModal listing={{
-                                        id: listing.id,
-                                        name: listing.name,
-                                        price: parseFloat(listing.price.toString()),
-                                        availableQty: listing.availableQty || undefined,
-                                        vendor: {
-                                            id: listing.vendor.id,
-                                            name: listing.vendor.name,
-                                            upiId: listing.vendor.upiId || undefined,
-                                        }
-                                    }}>
-                                        <Button className="w-full mt-6 rounded-2xl bg-black hover:bg-gray-900 text-white">
-                                            Place Order
-                                        </Button>
-                                    </OrderModal>
+                                    <>
+                                        {/* Check if inventory is 0 or listing is unavailable */}
+                                        {(listing.inventoryType === 'STOCK' && listing.availableQty === 0) || !listing.isAvailable ? (
+                                            <div className="mt-6">
+                                                <Button
+                                                    disabled
+                                                    className="w-full rounded-2xl bg-gray-400 cursor-not-allowed"
+                                                >
+                                                    {!listing.isAvailable ? 'Unavailable' : 'Out of Stock'}
+                                                </Button>
+                                                <p className="text-xs text-muted-foreground mt-2 text-center">
+                                                    {!listing.isAvailable
+                                                        ? 'This item is currently unavailable'
+                                                        : 'This item is currently out of stock'}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <OrderModal listing={{
+                                                id: listing.id,
+                                                name: listing.name,
+                                                price: parseFloat(listing.price.toString()),
+                                                availableQty: listing.availableQty || undefined,
+                                                vendor: {
+                                                    id: listing.vendor.id,
+                                                    name: listing.vendor.name,
+                                                    upiId: listing.vendor.upiId || undefined,
+                                                }
+                                            }}>
+                                                <Button className="w-full mt-6 rounded-2xl bg-black hover:bg-gray-900 text-white">
+                                                    Place Order
+                                                </Button>
+                                            </OrderModal>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="mt-6 space-y-2">
                                         <p className="text-sm text-muted-foreground">Contact vendor for pricing</p>

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Store, ArrowLeft, Plus } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
+import { DeleteListingButton } from "@/components/delete-listing-button";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { cookies } from "next/headers";
@@ -150,33 +151,42 @@ export default async function VendorPage({
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {vendor.listings.map((listing: any) => (
-                                <Link
-                                    key={listing.id}
-                                    href={`/marketplace/${listing.id}`}
-                                    className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 border-0 group"
-                                >
-                                    <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative flex items-center justify-center">
-                                        {listing.images && listing.images[0] ? (
-                                            <Image src={listing.images[0]} alt={listing.name} fill className="object-cover" />
-                                        ) : (
-                                            <Store className="h-16 w-16 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <div className="p-6">
-                                        <h4 className="text-xl font-light text-foreground line-clamp-1 mb-2">{listing.name}</h4>
-                                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{listing.description}</p>
-                                        <div className="flex items-center justify-between">
-                                            {listing.price !== null && listing.price !== undefined ? (
-                                                <p className="text-2xl font-light text-foreground">₹{listing.price}</p>
+                                <div key={listing.id} className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 border-0 group">
+                                    <Link href={`/marketplace/${listing.id}`}>
+                                        <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative flex items-center justify-center">
+                                            {listing.images && listing.images[0] ? (
+                                                <Image src={listing.images[0]} alt={listing.name} fill className="object-cover" />
                                             ) : (
-                                                <p className="text-sm text-muted-foreground">Contact for price</p>
+                                                <Store className="h-16 w-16 text-muted-foreground" />
                                             )}
-                                            {!listing.isAvailable && (
-                                                <Badge variant="secondary" className="rounded-full">Unavailable</Badge>
+                                        </div>
+                                    </Link>
+                                    <div className="p-6">
+                                        <Link href={`/marketplace/${listing.id}`}>
+                                            <h4 className="text-xl font-light text-foreground line-clamp-1 mb-2">{listing.name}</h4>
+                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{listing.description}</p>
+                                        </Link>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                {listing.price !== null && listing.price !== undefined ? (
+                                                    <p className="text-2xl font-light text-foreground">₹{listing.price}</p>
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground">Contact for price</p>
+                                                )}
+                                                {!listing.isAvailable && (
+                                                    <Badge variant="secondary" className="rounded-full">Unavailable</Badge>
+                                                )}
+                                            </div>
+                                            {isOwner && (
+                                                <DeleteListingButton
+                                                    listingId={listing.id}
+                                                    listingName={listing.name}
+                                                    vendorId={vendor.id}
+                                                />
                                             )}
                                         </div>
                                     </div>
-                                </Link>
+                                </div>
                             ))}
                         </div>
                     )}
