@@ -1,40 +1,11 @@
-# Node modules (not needed, using standalone build)
-node_modules
+# Everything except what we explicitly need
+*
 
-# Source files (not needed, using built output)
-src
-app
-components
-lib
-styles
+# Allow these files/folders
+!.next/standalone
+!.next/static
+!public
 
-# Config files (not needed in container)
-*.config.*
-tsconfig.json
-
-# Development files
-.git
-.gitignore
-README.md
-*.md
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-
-# Logs
-*.log
-npm-debug.log*
-
-# OS
-.DS_Store
-
-# Docker files
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Env files (will be passed via docker-compose)
-.env*
+# But exclude these from .next
+.next/cache
+.next/dev
