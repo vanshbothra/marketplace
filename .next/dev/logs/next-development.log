@@ -16,3 +16,6 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
 [01:08:15.276] Server  LOG      ✓ Compiled in 172ms
 [01:27:13.439] Server  LOG      ✓ Compiled in 136ms
 [01:46:12.676] Server  LOG      ✓ Compiled in 144ms
+[02:08:51.461] Server  LOG        Reload env: .env
+[02:08:51.636] Server  LOG      ✓ Compiled in 106ms
+[02:09:13.605] Server  LOG      ✓ Compiled in 56ms

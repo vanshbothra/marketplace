@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || "https://backend.ashokamarketplace.tech";
+const BACKEND_URL = process.env.BACKEND_URL || "https://ashokamarketplace.tech/backend";
 
 export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
