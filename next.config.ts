@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'standalone', // Required for Docker deployment
   /* allow images from any domain */
   images: {
     remotePatterns: [
