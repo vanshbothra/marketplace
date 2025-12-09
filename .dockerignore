@@ -1,50 +1,40 @@
-# Dependencies
+# Node modules (not needed, using standalone build)
 node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Next.js
-.next
-out
-build
+# Source files (not needed, using built output)
+src
+app
+components
+lib
+styles
 
-# Testing
-coverage
-.nyc_output
+# Config files (not needed in container)
+*.config.*
+tsconfig.json
 
-# Misc
-.DS_Store
-*.pem
-
-# Debug
-*.log
-
-# Local env files
-.env*.local
-.env.development
-.env.test
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
+# Development files
+.git
+.gitignore
+README.md
+*.md
 
 # IDE
 .vscode
 .idea
 *.swp
 *.swo
-*~
 
-# Git
-.git
-.gitignore
-README.md
+# Logs
+*.log
+npm-debug.log*
 
-# Docker
+# OS
+.DS_Store
+
+# Docker files
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+# Env files (will be passed via docker-compose)
+.env*
