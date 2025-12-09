@@ -66,6 +66,12 @@ function EditVendorContent() {
             .map(c => c.trim())
             .filter(c => c.length > 0);
 
+        const memberEmailsRaw = (formData.get('memberEmails') as string || '');
+        const memberEmails = memberEmailsRaw
+            .split(',')
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+
         const updateData = {
             name: formData.get('name'),
             description: formData.get('description'),
@@ -75,6 +81,7 @@ function EditVendorContent() {
             paymentInformation: formData.get('paymentInformation'),
             logo: formData.get('logo') || undefined,
             categories: categories.length > 0 ? categories : undefined,
+            memberEmails: memberEmails,
         };
 
         try {
@@ -235,6 +242,24 @@ function EditVendorContent() {
                             />
                             <p className="text-xs text-muted-foreground">
                                 Payment information for processing payments
+                            </p>
+                        </div>
+
+                        {/* Member Emails */}
+                        <div className="space-y-2">
+                            <Label htmlFor="memberEmails" className="text-sm font-medium text-foreground">
+                                Member Emails (Optional)
+                            </Label>
+                            <Input
+                                id="memberEmails"
+                                name="memberEmails"
+                                type="text"
+                                defaultValue={vendor.members?.map((m: any) => m.email).join(', ') || ''}
+                                placeholder="member1@ashoka.edu.in, member2@ashoka.edu.in"
+                                className="rounded-xl border-border focus:border-ring"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Comma-separated list of Ashoka email addresses for team members who can manage this vendor
                             </p>
                         </div>
 

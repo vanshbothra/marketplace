@@ -113,6 +113,12 @@ function NewVendorContent() {
             .map(c => c.trim())
             .filter(c => c.length > 0);
 
+        const memberEmailsRaw = (formData.get('memberEmails') as string || '');
+        const memberEmails = memberEmailsRaw
+            .split(',')
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+
         const vendorData = {
             name: formData.get('name'),
             description: formData.get('description'),
@@ -122,6 +128,7 @@ function NewVendorContent() {
             paymentInformation: formData.get('paymentInformation'),
             logo: logoImage || undefined, // Use uploaded image or undefined
             categories: categories.length > 0 ? categories : ['PRODUCT'],
+            memberEmails: memberEmails.length > 0 ? memberEmails : [],
         };
 
         try {
@@ -290,6 +297,23 @@ function NewVendorContent() {
                             />
                             <p className="text-xs text-muted-foreground">
                                 Payment information for processing payments
+                            </p>
+                        </div>
+
+                        {/* Member Emails */}
+                        <div className="space-y-2">
+                            <Label htmlFor="memberEmails" className="text-sm font-medium text-foreground">
+                                Member Emails (Optional)
+                            </Label>
+                            <Input
+                                id="memberEmails"
+                                name="memberEmails"
+                                type="text"
+                                placeholder="member1@ashoka.edu.in, member2@ashoka.edu.in"
+                                className="rounded-xl border-border focus:border-ring"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Comma-separated list of Ashoka email addresses for team members who can manage this vendor
                             </p>
                         </div>
 
