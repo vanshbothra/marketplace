@@ -14,9 +14,23 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WishlistSheet } from "@/components/wishlist-sheet";
 import { useAuth } from "@/components/auth-provider";
+import { usePathname } from "next/navigation";
 
 export function UserNav() {
     const { user, isLoading } = useAuth();
+    const pathname = usePathname();
+
+    // Don't render on public auth routes
+    const publicRoutes = ['/auth/signin', '/auth/error'];
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+    if (isPublicRoute) {
+        return (
+            <div className="flex items-center gap-2">
+                <ThemeToggle />
+            </div>
+        );
+    }
 
     const handleSignOut = async () => {
         // Clear cookies and redirect to backend logout
