@@ -8,12 +8,12 @@ import Link from "next/link";
 import { Store, ArrowLeft } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { notFound } from "next/navigation";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
-export default function EditVendorPage() {
+function EditVendorContent() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
@@ -282,5 +282,20 @@ export default function EditVendorPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function EditVendorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <EditVendorContent />
+        </Suspense>
     );
 }

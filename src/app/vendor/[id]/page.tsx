@@ -1,75 +1,99 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Store, ArrowLeft, Plus } from "lucide-react";
-import { UserNav } from "@/components/user-nav";
 import { DeleteListingButton } from "@/components/delete-listing-button";
-import { notFound } from "next/navigation";
 import Image from "next/image";
-import { cookies } from "next/headers";
+import { useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
-export default async function VendorPage({
-    params,
-}: {
-    params: Promise<{ id: string }>;
-}) {
-    const { id } = await params;
+function VendorContent() {
+    const params = useParams();
+    const id = params.id as string;
 
-    // Get cookies to pass to backend
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.toString();
+    const [vendor, setVendor] = useState<any>(null);
+    const [isOwner, setIsOwner] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Fetch vendor from backend API (public endpoint)
-    let vendor;
-    try {
-        const response = await fetch(`${BACKEND_URL}/vendors/${id}`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
+    useEffect(() => {
+        async function fetchVendor() {
+            try {
+                // Fetch vendor data
+                const response = await fetch(`${BACKEND_URL}/vendors/${id}`, {
+                    credentials: 'include',
+                });
 
-        if (!response.ok) {
-            console.error(`Failed to fetch vendor: ${response.status} ${response.statusText}`);
-            notFound();
+                if (!response.ok) {
+                    setError('Vendor not found');
+                    setLoading(false);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.success || !data.data) {
+                    setError('Invalid vendor data');
+                    setLoading(false);
+                    return;
+                }
+
+                setVendor(data.data);
+
+                // Check if user is owner
+                try {
+                    const meResponse = await fetch(`${BACKEND_URL}/vendors/me/${id}`, {
+                        credentials: 'include',
+                    });
+
+                    if (meResponse.ok) {
+                        const meData = await meResponse.json();
+                        setIsOwner(meData.success && meData.data);
+                    }
+                } catch (err) {
+                    setIsOwner(false);
+                }
+
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching vendor:', err);
+                setError('Failed to load vendor');
+                setLoading(false);
+            }
         }
 
-        const data = await response.json();
-        if (!data.success || !data.data) {
-            console.error('Invalid response from backend:', data);
-            notFound();
-        }
+        fetchVendor();
+    }, [id]);
 
-        vendor = data.data;
-    } catch (error) {
-        console.error('Error fetching vendor:', error);
-        // If backend is not reachable, show a more helpful error
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-            console.error('Backend server may not be running at:', BACKEND_URL);
-        }
-        notFound();
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading vendor...</p>
+                </div>
+            </div>
+        );
     }
 
-    // Check if current user is an owner by calling the /me endpoint
-    // If the backend returns success, user is an owner
-    let isOwner = false;
-    try {
-        const meResponse = await fetch(`${BACKEND_URL}/vendors/me/${id}`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
-
-        if (meResponse.ok) {
-            const meData = await meResponse.json();
-            isOwner = meData.success && meData.data;
-        }
-    } catch (error) {
-        // User is not an owner, that's fine
-        isOwner = false;
+    if (error || !vendor) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-2xl font-light mb-2 text-foreground">{error || 'Vendor not found'}</h3>
+                    <Button asChild className="rounded-2xl mt-4">
+                        <Link href="/marketplace">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Marketplace
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -193,5 +217,20 @@ export default async function VendorPage({
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function VendorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <VendorContent />
+        </Suspense>
     );
 }

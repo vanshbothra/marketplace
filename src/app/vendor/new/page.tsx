@@ -8,12 +8,12 @@ import Link from "next/link";
 import { Store, ArrowLeft, Upload, X } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
-export default function NewVendorPage() {
+function NewVendorContent() {
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -379,5 +379,20 @@ export default function NewVendorPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function NewVendorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <NewVendorContent />
+        </Suspense>
     );
 }
