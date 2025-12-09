@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SignInPage() {
+    const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
     const handleGoogleSignIn = () => {
-        window.location.href = 'http://localhost:4000/auth/browser/google';
+        window.location.href = `${BACKEND_URL}/auth/browser/google`;
     };
 
     return (
