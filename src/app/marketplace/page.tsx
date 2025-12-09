@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,63 +7,63 @@ import Link from "next/link";
 import { ShoppingBag, GraduationCap, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { MarketplaceFilters } from "@/components/marketplace-filters";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
-export default async function MarketplacePage({
-    searchParams,
-}: {
-    searchParams: Promise<{
-        search?: string;
-        type?: string;
-        sort?: string;
-        tags?: string;
-        page?: string;
-        limit?: string;
-    }>;
-}) {
-    const params = await searchParams;
-    const page = parseInt(params.page || '1');
-    const limit = parseInt(params.limit || '12');
+function MarketplaceContent() {
+    const searchParams = useSearchParams();
+    const [listings, setListings] = useState<any[]>([]);
+    const [meta, setMeta] = useState({ total: 0, page: 1, limit: 12, totalPages: 0 });
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Get cookies for authentication
-    // const cookieStore = await cookies();
-    // const cookieHeader = cookieStore.toString();
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const search = searchParams.get('search') || '';
+    const type = searchParams.get('type') || '';
+    const tags = searchParams.get('tags') || '';
+    const sort = searchParams.get('sort') || '';
 
-    // Fetch listings from backend
-    let listings: any[] = [];
-    let meta = { total: 0, page: 1, limit: 12, totalPages: 0 };
-    let error = null;
+    useEffect(() => {
+        async function fetchListings() {
+            setLoading(true);
+            setError(null);
 
-    try {
-        const queryParams = new URLSearchParams();
-        queryParams.set('page', page.toString());
-        queryParams.set('limit', limit.toString());
+            try {
+                const queryParams = new URLSearchParams();
+                queryParams.set('page', page.toString());
+                queryParams.set('limit', limit.toString());
 
-        if (params.search) queryParams.set('search', params.search);
-        if (params.type) queryParams.set('type', params.type);
-        if (params.tags) queryParams.set('tags', params.tags);
-        if (params.sort) queryParams.set('sort', params.sort);
+                if (search) queryParams.set('search', search);
+                if (type) queryParams.set('type', type);
+                if (tags) queryParams.set('tags', tags);
+                if (sort) queryParams.set('sort', sort);
 
-        const response = await fetch(`${BACKEND_URL}/listings?${queryParams.toString()}`, {
-            cache: 'no-store',
-            credentials: 'include',
-        });
+                const response = await fetch(`${BACKEND_URL}/listings?${queryParams.toString()}`, {
+                    credentials: 'include',
+                });
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data && data.data.data) {
-                // Backend returns: { success, data: { data: [...items], meta: {...} } }
-                listings = data.data.data || [];
-                meta = data.data.meta || meta;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data && data.data.data) {
+                        setListings(data.data.data || []);
+                        setMeta(data.data.meta || meta);
+                    }
+                } else {
+                    setError('Failed to fetch listings');
+                }
+            } catch (err) {
+                console.error('Error fetching listings:', err);
+                setError('Backend connection error');
+            } finally {
+                setLoading(false);
             }
-        } else {
-            error = 'Failed to fetch listings';
         }
-    } catch (err) {
-        console.error('Error fetching listings:', err);
-        error = 'Backend connection error';
-    }
+
+        fetchListings();
+    }, [page, limit, search, type, tags, sort]);
 
     // Get unique tags from listings for filter
     const allTags = Array.from(
@@ -74,7 +74,27 @@ export default async function MarketplacePage({
         )
     );
 
-    const selectedTags = params.tags ? params.tags.split(',') : [];
+    const selectedTags = tags ? tags.split(',') : [];
+
+    const params = {
+        search,
+        type,
+        tags,
+        sort,
+        page: page.toString(),
+        limit: limit.toString(),
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading listings...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-soft">
@@ -97,20 +117,20 @@ export default async function MarketplacePage({
                 />
 
                 {/* Active Filters Display */}
-                {(params.search || params.type || selectedTags.length > 0) && (
+                {(search || type || selectedTags.length > 0) && (
                     <div className="mb-6 flex flex-wrap items-center gap-2">
                         <span className="text-sm text-muted-foreground">Active filters:</span>
-                        {params.search && (
+                        {search && (
                             <Badge variant="secondary" className="rounded-full">
-                                Search: {params.search}
+                                Search: {search}
                                 <Link href="/marketplace" className="ml-1">
                                     <X className="h-3 w-3" />
                                 </Link>
                             </Badge>
                         )}
-                        {params.type && (
+                        {type && (
                             <Badge variant="secondary" className="rounded-full">
-                                {params.type}
+                                {type}
                                 <Link
                                     href={`/marketplace?${new URLSearchParams({
                                         ...params,
@@ -246,5 +266,20 @@ export default async function MarketplacePage({
                 )}
             </main>
         </div>
+    );
+}
+
+export default function MarketplacePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <MarketplaceContent />
+        </Suspense>
     );
 }
