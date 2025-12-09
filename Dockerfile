@@ -1,25 +1,26 @@
-# Use Node 20 Alpine
-FROM node:20-alpine
-
+# Use official Node.js image
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Set environment variables
+# Install dependencies and build Next.js app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Copy built files and production dependencies
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# 1. Copy the "standalone" folder. 
-# This contains a minimal node_modules and just the necessary server files.
-COPY .next/standalone ./
-
-# 2. Copy the "static" folder. 
-# Standalone does NOT bundle static assets (css, images), so we must copy them manually.
-COPY .next/static ./.next/static
-
-# 3. Copy the "public" folder.
-# For things like favicon.ico, robots.txt, etc.
-COPY public ./public
+ENV HOSTNAME=0.0.0.0
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "run", "start"]
