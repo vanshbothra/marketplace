@@ -100,7 +100,7 @@ export function OrderModal({ listing, children }: OrderModalProps) {
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-gradient-soft">
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto bg-gradient-soft">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-light">Place Order</DialogTitle>
                     <DialogDescription>
