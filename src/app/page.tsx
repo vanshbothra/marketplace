@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +5,7 @@ import Link from "next/link";
 import { Store, ShoppingBag, GraduationCap } from "lucide-react";
 import { UserNav } from "@/components/user-nav";
 
-export default async function Home() {
-  const session = await auth();
-  // Proxy middleware guarantees authentication, so session is never null
+export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-soft">

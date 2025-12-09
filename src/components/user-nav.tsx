@@ -60,7 +60,8 @@ export function UserNav() {
         document.cookie = 'user-image=; Max-Age=0; path=/';
 
         // Redirect to backend logout endpoint
-        window.location.href = 'http://localhost:4000/auth/browser/logout';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
+        window.location.href = `${backendUrl}/auth/browser/logout`;
     };
 
     if (!user) {

@@ -67,7 +67,7 @@ export function OrderDetailModal({ order, listingId, open, onOpenChange }: Order
         setError("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
             const response = await fetch(`${apiUrl}/listings/${listingId}/orders/${order.id}`, {
                 method: 'PUT',
                 headers: {

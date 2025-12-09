@@ -32,7 +32,7 @@ export function DeleteListingButton({ listingId, listingName, vendorId }: Delete
         setError(null);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
             const response = await fetch(`${apiUrl}/vendors/${vendorId}/listings/${listingId}`, {
                 method: 'DELETE',
                 credentials: 'include',

@@ -1,4 +1,5 @@
-import { auth } from "@/lib/auth";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { Store, ArrowLeft } from "lucide-react";
-import { UserNav } from "@/components/user-nav";
-import { cookies } from "next/headers";
+import { useEffect, useState, Suspense } from "react";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
 type OrderStatus = "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
 
@@ -43,45 +45,37 @@ interface Order {
     updatedAt: string;
 }
 
-async function fetchUserOrders(): Promise<Order[]> {
-    try {
-        const apiUrl = process.env.BACKEND_URL || 'http://localhost:4000';
-        const url = `${apiUrl}/orders/me`;
-        const cookieStore = await cookies();
-        const cookieHeader = cookieStore.toString();
+function OrdersContent() {
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-        const response = await fetch(url, {
-            headers: {
-                'Cookie': cookieHeader,
-            },
-            cache: 'no-store',
-        });
+    useEffect(() => {
+        async function fetchUserOrders() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/orders/me`, {
+                    credentials: 'include',
+                });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Failed to fetch orders:', response.statusText, errorText);
-            return [];
+                if (!response.ok) {
+                    setError('Failed to fetch orders');
+                    setOrders([]);
+                    return;
+                }
+
+                const data = await response.json();
+                setOrders(data.data || []);
+            } catch (err) {
+                console.error('Error fetching orders:', err);
+                setError('Error loading orders');
+                setOrders([]);
+            } finally {
+                setLoading(false);
+            }
         }
 
-        const data = await response.json();
-        return data.data || [];
-    } catch (error) {
-        console.error('Error fetching orders:', error);
-        return [];
-    }
-}
-
-export default async function OrdersPage() {
-    const session = await auth();
-
-    let orders: Order[] = [];
-
-    try {
-        orders = await fetchUserOrders();
-    } catch (error) {
-        console.error('Error fetching orders:', error);
-        orders = [];
-    }
+        fetchUserOrders();
+    }, []);
 
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
@@ -95,6 +89,17 @@ export default async function OrdersPage() {
                 return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
         }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading orders...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-soft">
@@ -114,6 +119,12 @@ export default async function OrdersPage() {
                         {orders.length} {orders.length === 1 ? "order" : "orders"} total
                     </p>
                 </div>
+
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
+                        <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                    </div>
+                )}
 
                 {/* Filters */}
                 <div className="flex gap-4 mb-6">
@@ -201,5 +212,20 @@ export default async function OrdersPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+export default function OrdersPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <OrdersContent />
+        </Suspense>
     );
 }

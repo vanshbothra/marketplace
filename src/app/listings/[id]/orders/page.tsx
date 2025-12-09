@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -8,11 +10,11 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { ArrowLeft, Package } from "lucide-react";
-import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import { OrdersTable } from "./orders-table";
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
 type OrderStatus = "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
 
@@ -40,71 +42,81 @@ interface Order {
     };
 }
 
-async function fetchListingOrders(listingId: string): Promise<Order[]> {
-    try {
-        const cookieStore = await cookies();
-        const cookieHeader = cookieStore.toString();
+function ListingOrdersContent() {
+    const params = useParams();
+    const id = params.id as string;
 
-        const response = await fetch(`${BACKEND_URL}/listings/${listingId}/orders`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
+    const [listing, setListing] = useState<any>(null);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error(`Failed to fetch listing orders: ${response.status} ${response.statusText}`, errorData);
-            return [];
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                // Fetch listing and orders in parallel
+                const [listingResponse, ordersResponse] = await Promise.all([
+                    fetch(`${BACKEND_URL}/listings/${id}`, {
+                        credentials: 'include',
+                    }),
+                    fetch(`${BACKEND_URL}/listings/${id}/orders`, {
+                        credentials: 'include',
+                    })
+                ]);
+
+                if (!listingResponse.ok) {
+                    setError('Listing not found');
+                    setLoading(false);
+                    return;
+                }
+
+                const listingData = await listingResponse.json();
+                setListing(listingData.data);
+
+                if (ordersResponse.ok) {
+                    const ordersData = await ordersResponse.json();
+                    setOrders(ordersData.data || []);
+                } else {
+                    setOrders([]);
+                }
+
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching data:', err);
+                setError('Failed to load data');
+                setLoading(false);
+            }
         }
 
-        const data = await response.json();
-        return data.data || [];
-    } catch (error) {
-        console.error('Error fetching listing orders:', error);
-        return [];
+        fetchData();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading orders...</p>
+                </div>
+            </div>
+        );
     }
-}
 
-async function fetchListing(listingId: string) {
-    try {
-        const cookieStore = await cookies();
-        const cookieHeader = cookieStore.toString();
-
-        const response = await fetch(`${BACKEND_URL}/listings/${listingId}`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const data = await response.json();
-        return data.data;
-    } catch (error) {
-        console.error('Error fetching listing:', error);
-        return null;
-    }
-}
-
-export default async function ListingOrdersPage({
-    params,
-}: {
-    params: Promise<{ id: string }>;
-}) {
-    const { id } = await params;
-
-    // Fetch listing and orders
-    const [listing, orders] = await Promise.all([
-        fetchListing(id),
-        fetchListingOrders(id)
-    ]);
-
-    if (!listing) {
-        notFound();
+    if (error || !listing) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-2xl font-light mb-2 text-foreground">{error || 'Listing not found'}</h3>
+                    <Button asChild className="rounded-2xl mt-4">
+                        <Link href="/marketplace">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Marketplace
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     const pendingOrders = orders.filter(o => o.status === "PENDING" || o.status === "CONFIRMED");
@@ -177,5 +189,20 @@ export default async function ListingOrdersPage({
                 )}
             </main>
         </div>
+    );
+}
+
+export default function ListingOrdersPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ListingOrdersContent />
+        </Suspense>
     );
 }
