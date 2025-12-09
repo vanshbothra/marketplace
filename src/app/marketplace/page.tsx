@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,9 +7,8 @@ import Link from "next/link";
 import { ShoppingBag, GraduationCap, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { MarketplaceFilters } from "@/components/marketplace-filters";
-import { cookies } from "next/headers";
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
 export default async function MarketplacePage({
     searchParams,
@@ -26,8 +27,8 @@ export default async function MarketplacePage({
     const limit = parseInt(params.limit || '12');
 
     // Get cookies for authentication
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.toString();
+    // const cookieStore = await cookies();
+    // const cookieHeader = cookieStore.toString();
 
     // Fetch listings from backend
     let listings: any[] = [];
@@ -46,9 +47,7 @@ export default async function MarketplacePage({
 
         const response = await fetch(`${BACKEND_URL}/listings?${queryParams.toString()}`, {
             cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
+            credentials: 'include',
         });
 
         if (response.ok) {
