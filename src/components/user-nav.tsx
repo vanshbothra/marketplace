@@ -13,17 +13,65 @@ import {
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WishlistSheet } from "@/components/wishlist-sheet";
-import { useAuth } from "@/components/auth-provider";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
+
+interface User {
+    id: string;
+    name?: string;
+    email?: string;
+    imageUrl?: string;
+}
 
 export function UserNav() {
-    const { user, isLoading } = useAuth();
-    console.log(user);
     const pathname = usePathname();
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
     // Don't render on public auth routes
     const publicRoutes = ['/auth/signin', '/auth/error'];
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+    useEffect(() => {
+        if (isPublicRoute) {
+            setLoading(false);
+            return;
+        }
+
+        async function fetchUser() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/browser/me`, {
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('UserNav - fetched user data:', data);
+
+                    if (data.success && data.data) {
+                        setUser(data.data);
+                    } else {
+                        setUser(null);
+                    }
+                } else {
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error('Error fetching user in UserNav:', error);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchUser();
+
+        // Refresh user data every 5 minutes
+        const interval = setInterval(fetchUser, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [isPublicRoute]);
 
     if (isPublicRoute) {
         return (
@@ -41,11 +89,10 @@ export function UserNav() {
         document.cookie = 'user-image=; Max-Age=0; path=/';
 
         // Redirect to backend logout endpoint
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
-        window.location.href = `${backendUrl}/auth/browser/logout`;
+        window.location.href = `${BACKEND_URL}/auth/browser/logout`;
     };
 
-    if (isLoading || !user) {
+    if (loading || !user) {
         return (
             <div className="flex items-center gap-2">
                 <ThemeToggle />
