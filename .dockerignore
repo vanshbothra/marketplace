@@ -1,11 +1,4 @@
-# Everything except what we explicitly need
 *
-
-# Allow these files/folders
-!.next/standalone
-!.next/static
 !public
-
-# But exclude these from .next
-.next/cache
-.next/dev
+!.next/static
+!.next/standalone
