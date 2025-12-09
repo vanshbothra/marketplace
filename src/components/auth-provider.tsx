@@ -32,6 +32,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const publicRoutes = ['/auth/signin', '/auth/error'];
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
+    // Helper function to set user cookies
+    function setUserCookies(user: any) {
+        if (typeof document === 'undefined') return; // Skip on server
+
+        const cookieOptions = `path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+
+        if (user.id) {
+            document.cookie = `user-id=${user.id}; ${cookieOptions}`;
+        }
+        if (user.name) {
+            document.cookie = `user-name=${encodeURIComponent(user.name)}; ${cookieOptions}`;
+        }
+        if (user.email) {
+            document.cookie = `user-email=${encodeURIComponent(user.email)}; ${cookieOptions}`;
+        }
+        if (user.imageUrl) {
+            document.cookie = `user-image=${encodeURIComponent(user.imageUrl)}; ${cookieOptions}`;
+        }
+    }
+
+    // Helper function to clear user cookies
+    function clearUserCookies() {
+        if (typeof document === 'undefined') return; // Skip on server
+
+        const expiredCookie = 'path=/; max-age=0';
+        document.cookie = `user-id=; ${expiredCookie}`;
+        document.cookie = `user-name=; ${expiredCookie}`;
+        document.cookie = `user-email=; ${expiredCookie}`;
+        document.cookie = `user-image=; ${expiredCookie}`;
+    }
+
     useEffect(() => {
         async function checkAuth() {
             // Skip auth check for public routes
@@ -49,8 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.data) {
-                        setUser(data.data);
+                        const userData = data.data;
+                        setUser(userData);
                         setIsAuthenticated(true);
+
+                        // Set user data cookies for client-side access
+                        setUserCookies(userData);
+
                         setIsLoading(false);
                         return;
                     }
@@ -70,8 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (retryResponse.ok) {
                             const data = await retryResponse.json();
                             if (data.success && data.data) {
-                                setUser(data.data);
+                                const userData = data.data;
+                                setUser(userData);
                                 setIsAuthenticated(true);
+
+                                // Set user data cookies for client-side access
+                                setUserCookies(userData);
+
                                 setIsLoading(false);
                                 return;
                             }
@@ -83,12 +124,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('Authentication failed, redirecting to signin...');
                 setIsAuthenticated(false);
                 setUser(null);
+                clearUserCookies();
                 setIsLoading(false);
                 router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
             } catch (error) {
                 console.error('Auth check error:', error);
                 setIsAuthenticated(false);
                 setUser(null);
+                clearUserCookies();
                 setIsLoading(false);
                 router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
             }

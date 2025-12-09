@@ -1,10 +1,13 @@
-import { auth } from "@/lib/auth";
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Store, Plus, Package, Clock, Crown, Users } from "lucide-react";
-import { cookies } from "next/headers";
+import { useEffect, useState, Suspense } from "react";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
 interface Vendor {
     id: string;
@@ -28,48 +31,53 @@ interface Vendor {
     };
 }
 
-async function fetchUserVendors(): Promise<Vendor[]> {
-    try {
-        const apiUrl = process.env.BACKEND_URL || 'http://localhost:4000';
-        const url = `${apiUrl}/vendors/me`;
-        const cookieStore = await cookies();
-        const cookieHeader = cookieStore.toString();
+function DashboardContent() {
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-        const response = await fetch(url, {
-            headers: {
-                'Cookie': cookieHeader,
-            },
-            cache: 'no-store',
-        });
+    useEffect(() => {
+        async function fetchUserVendors() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/vendors/me`, {
+                    credentials: 'include',
+                });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Failed to fetch vendors:', response.statusText, errorText);
-            return [];
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Failed to fetch vendors:', response.statusText, errorText);
+                    setVendors([]);
+                    setError('Failed to fetch vendors');
+                    return;
+                }
+
+                const data = await response.json();
+                setVendors(data.data || []);
+            } catch (error) {
+                console.error('Error fetching vendors:', error);
+                setVendors([]);
+                setError('Error connecting to backend');
+            } finally {
+                setLoading(false);
+            }
         }
 
-        const data = await response.json();
-        return data.data || [];
-    } catch (error) {
-        console.error('Error fetching vendors:', error);
-        return [];
-    }
-}
-
-export default async function DashboardPage() {
-    const session = await auth();
-
-    let vendors: Vendor[] = [];
-
-    try {
-        vendors = await fetchUserVendors();
-    } catch (error) {
-        console.error('Error fetching vendors:', error);
-        vendors = [];
-    }
+        fetchUserVendors();
+    }, []);
 
     const vendorCount = vendors.length;
     const canCreateVendor = vendorCount < 5;
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-soft">
@@ -90,6 +98,13 @@ export default async function DashboardPage() {
                         </Button>
                     )}
                 </div>
+
+                {/* Error State */}
+                {error && (
+                    <div className="glass-card rounded-3xl p-8 mb-8 shadow-soft border-0 bg-red-50 dark:bg-red-900/20">
+                        <p className="text-red-600 dark:text-red-400">⚠️ {error}</p>
+                    </div>
+                )}
 
                 {/* Vendor Count Info */}
                 <div className="glass-card rounded-3xl p-8 mb-8 shadow-soft border-0">
@@ -176,5 +191,20 @@ export default async function DashboardPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
     );
 }
