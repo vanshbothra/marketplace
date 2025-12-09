@@ -46,10 +46,14 @@ export function WishlistSheet() {
             }
 
             const data = await response.json();
+            console.log('Wishlist response from backend:', data);
+
             if (data.success && data.data && data.data.data) {
                 // Backend returns: { success, data: { data: [...items], meta: {...} } }
+                console.log('Wishlist items:', data.data.data);
                 setWishlist(data.data.data || []);
             } else {
+                console.log('No wishlist data found');
                 setWishlist([]);
             }
         } catch (error) {
