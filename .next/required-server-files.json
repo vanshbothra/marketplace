@@ -109,7 +109,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/Users/ibrahimkhalil",
+    "outputFileTracingRoot": "/Users/vanshbothra/Documents/project/marketplace",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -167,7 +167,7 @@
       "proxyPrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-      "cpus": 9,
+      "cpus": 7,
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -299,12 +299,12 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "/Users/ibrahimkhalil"
+      "root": "/Users/vanshbothra/Documents/project/marketplace"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "/Users/ibrahimkhalil/Desktop/projects/marketplace",
-  "relativeAppDir": "Desktop/projects/marketplace",
+  "appDir": "/Users/vanshbothra/Documents/project/marketplace",
+  "relativeAppDir": "",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",
