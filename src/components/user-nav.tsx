@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 
 export function UserNav() {
     const { user, isLoading } = useAuth();
+    console.log(user);
     const pathname = usePathname();
 
     // Don't render on public auth routes
