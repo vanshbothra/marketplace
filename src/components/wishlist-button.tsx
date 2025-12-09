@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
@@ -17,6 +17,28 @@ export function WishlistButton({ listingId, className = "", size = "icon", varia
     const [isInWishlist, setIsInWishlist] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const checkWishlistStatus = useCallback(async () => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/wishlist/me`, {
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    // Handle both response formats
+                    const items = data.data.data || data.data;
+                    if (Array.isArray(items)) {
+                        const inWishlist = items.some((item: any) => item.id === listingId);
+                        setIsInWishlist(inWishlist);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking wishlist status:', error);
+        }
+    }, [listingId]);
+
     useEffect(() => {
         // Check if item is in wishlist
         checkWishlistStatus();
@@ -28,26 +50,7 @@ export function WishlistButton({ listingId, className = "", size = "icon", varia
 
         window.addEventListener('wishlistUpdated', handleWishlistUpdate);
         return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
-    }, [listingId]);
-
-    const checkWishlistStatus = async () => {
-        try {
-            const response = await fetch(`${BACKEND_URL}/wishlist/me`, {
-                credentials: 'include',
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.data && data.data.data) {
-                    // Backend returns: { success, data: { data: [...items], meta: {...} } }
-                    const inWishlist = data.data.data.some((item: any) => item.id === listingId);
-                    setIsInWishlist(inWishlist);
-                }
-            }
-        } catch (error) {
-            console.error('Error checking wishlist status:', error);
-        }
-    };
+    }, [checkWishlistStatus]);
 
     const toggleWishlist = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -66,6 +69,8 @@ export function WishlistButton({ listingId, className = "", size = "icon", varia
                 if (response.ok) {
                     setIsInWishlist(false);
                     window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+                } else {
+                    console.error('Failed to remove from wishlist:', response.status);
                 }
             } else {
                 // Add to wishlist
@@ -77,6 +82,8 @@ export function WishlistButton({ listingId, className = "", size = "icon", varia
                 if (response.ok) {
                     setIsInWishlist(true);
                     window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+                } else {
+                    console.error('Failed to add to wishlist:', response.status);
                 }
             }
         } catch (error) {

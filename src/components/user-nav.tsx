@@ -13,44 +13,10 @@ import {
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WishlistSheet } from "@/components/wishlist-sheet";
-import { useEffect, useState } from "react";
-
-interface User {
-    id: string;
-    name?: string;
-    email?: string;
-    image?: string;
-}
+import { useAuth } from "@/components/auth-provider";
 
 export function UserNav() {
-    const [user, setUser] = useState<User | null>(null);
-
-    useEffect(() => {
-        // Read user data from cookies
-        const getCookie = (name: string) => {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) {
-                const cookieValue = parts.pop()?.split(';').shift();
-                return cookieValue ? decodeURIComponent(cookieValue) : undefined;
-            }
-            return undefined;
-        };
-
-        const userId = getCookie('user-id');
-        const userName = getCookie('user-name');
-        const userEmail = getCookie('user-email');
-        const userImage = getCookie('user-image');
-
-        if (userId) {
-            setUser({
-                id: userId,
-                name: userName,
-                email: userEmail,
-                image: userImage,
-            });
-        }
-    }, []);
+    const { user, isLoading } = useAuth();
 
     const handleSignOut = async () => {
         // Clear cookies and redirect to backend logout
@@ -64,8 +30,13 @@ export function UserNav() {
         window.location.href = `${backendUrl}/auth/browser/logout`;
     };
 
-    if (!user) {
-        return null; // or a loading skeleton
+    if (isLoading || !user) {
+        return (
+            <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse"></div>
+            </div>
+        );
     }
 
     return (
@@ -76,7 +47,7 @@ export function UserNav() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                         <Avatar>
-                            <AvatarImage src={user.image || ""} alt={user.name || ""} />
+                            <AvatarImage src={user.imageUrl || ""} alt={user.name || ""} />
                             <AvatarFallback>{user.name?.charAt(0) || user.email?.charAt(0) || "U"}</AvatarFallback>
                         </Avatar>
                     </Button>

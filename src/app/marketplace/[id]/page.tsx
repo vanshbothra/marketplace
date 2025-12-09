@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,75 +11,110 @@ import { OrderModal } from "@/components/order-modal";
 import { ReviewModal } from "@/components/review-modal";
 import { ImageSlideshow } from "@/components/image-slideshow";
 import Image from "next/image";
-import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ashokamarketplace.tech/backend';
 
-export default async function ListingDetailPage({
-    params,
-}: {
-    params: Promise<{ id: string }>;
-}) {
-    const { id } = await params;
+function ListingDetailContent() {
+    const params = useParams();
+    const id = params.id as string;
 
-    // Get cookies to pass to backend
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.toString();
+    const [listing, setListing] = useState<any>(null);
+    const [isOwnerOrMember, setIsOwnerOrMember] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Get user ID from cookie set by proxy
-    const userId = cookieStore.get('user-id')?.value;
+    useEffect(() => {
+        // Get user ID from cookie
+        const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop()?.split(';').shift();
+            }
+            return undefined;
+        };
 
-    // Fetch listing from backend API
-    let listing;
-    try {
-        const response = await fetch(`${BACKEND_URL}/listings/${id}`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
+        const userIdFromCookie = getCookie('user-id');
+        setUserId(userIdFromCookie || null);
 
-        if (!response.ok) {
-            console.error(`Failed to fetch listing: ${response.status} ${response.statusText}`);
-            notFound();
+        async function fetchData() {
+            try {
+                // Fetch listing
+                const response = await fetch(`${BACKEND_URL}/listings/${id}`, {
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    setError('Listing not found');
+                    setLoading(false);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.success || !data.data) {
+                    setError('Invalid listing data');
+                    setLoading(false);
+                    return;
+                }
+
+                setListing(data.data);
+
+                // Check if current user is owner/member
+                try {
+                    const vendorResponse = await fetch(`${BACKEND_URL}/vendors/me/${data.data.vendorId}`, {
+                        credentials: 'include',
+                    });
+
+                    if (vendorResponse.ok) {
+                        const vendorData = await vendorResponse.json();
+                        setIsOwnerOrMember(vendorData.success && vendorData.data);
+                    }
+                } catch (err) {
+                    setIsOwnerOrMember(false);
+                }
+
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching listing:', err);
+                setError('Failed to load listing');
+                setLoading(false);
+            }
         }
 
-        const data = await response.json();
-        if (!data.success || !data.data) {
-            console.error('Invalid response from backend:', data);
-            notFound();
-        }
+        fetchData();
+    }, [id]);
 
-        listing = data.data;
-    } catch (error) {
-        console.error('Error fetching listing:', error);
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-            console.error('Backend server may not be running at:', BACKEND_URL);
-        }
-        notFound();
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading listing...</p>
+                </div>
+            </div>
+        );
     }
 
-    // Check if current user is owner/member by trying to access the vendor
-    let isOwnerOrMember = false;
-    try {
-        const vendorResponse = await fetch(`${BACKEND_URL}/vendors/me/${listing.vendorId}`, {
-            cache: 'no-store',
-            headers: {
-                'Cookie': cookieHeader,
-            },
-        });
-
-        if (vendorResponse.ok) {
-            const vendorData = await vendorResponse.json();
-            isOwnerOrMember = vendorData.success && vendorData.data;
-        }
-    } catch (error) {
-        // User is not owner/member, that's fine
-        isOwnerOrMember = false;
+    if (error || !listing) {
+        return (
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-2xl font-light mb-2 text-foreground">{error || 'Listing not found'}</h3>
+                    <Button asChild className="rounded-2xl mt-4">
+                        <Link href="/marketplace">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Marketplace
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
-    // Check if current user has already reviewed this listing using cookie user-id
     const userHasReviewed = userId && listing.reviews?.some(
         (review: any) => review.userId === userId
     );
@@ -387,5 +424,20 @@ export default async function ListingDetailPage({
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function ListingDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+                <div className="text-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ListingDetailContent />
+        </Suspense>
     );
 }
