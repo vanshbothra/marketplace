@@ -9,3 +9,5 @@
 [00:19:15.677] Browser WARN    Image with src "https://images.unsplash.com/photo-1761850648640-2ee5870ee883?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
 Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
 [00:19:15.677] Browser WARN    Image with src "https://images.unsplash.com/photo-1761850648640-2ee5870ee883?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:45:25.120] Server  LOG        Reload env: .env
+[00:45:25.367] Server  LOG      ✓ Compiled in 208ms

@@ -181,7 +181,7 @@ function DeleteListingButton({ listingId, listingName, vendorId }) {
         setIsDeleting(true);
         setError(null);
         try {
-            const apiUrl = ("TURBOPACK compile-time value", "http://localhost:4000") || 'http://localhost:4000';
+            const apiUrl = ("TURBOPACK compile-time value", "https://backend.ashokamarketplace.tech") || 'http://localhost:4000';
             const response = await fetch(`${apiUrl}/vendors/${vendorId}/listings/${listingId}`, {
                 method: 'DELETE',
                 credentials: 'include'
